@@ -50,13 +50,13 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
 
-  _motor.Set_speed(-TICKPERREVOLUTION, 0);
-
-
   // LocalState data = _arduino_state.getSnapshot();
   // Serial.print(data.actual_w1);
   // Serial.print("||");
   // Serial.println(data.actual_w2);
+
+  LocalState data = _arduino_state.getSnapshot();
+  _motor.Set_speed_rads(data.target_w1, data.target_w2);
 
 }
  

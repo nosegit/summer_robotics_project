@@ -1,16 +1,16 @@
 from flask import Flask, render_template
 from flask_socketio import SocketIO
 from arduino_node import ArduinoNode
+import serial.tools.list_ports  # Added to scan for COM ports
 import time
 
 app = Flask(__name__)
-# Force threading mode for stable background tasks on Windows/Local networks
+# Force threading mode for stable background tasks
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
-# --- CONFIGURE YOUR ARDUINOS HERE ---
-# Update 'COM5' if your port changes
+# Initialize nodes with NO default ports. The UI will assign them now!
 nodes = {
-    "arduino1": ArduinoNode(port='COM5', name="Arduino 1"),
+    "arduino1": ArduinoNode(port=None, name="Arduino 1"),
     "arduino2": ArduinoNode(port=None, name="Arduino 2") 
 }
 
@@ -20,8 +20,9 @@ def telemetry_broadcast_loop():
     while True:
         telemetry_packet = {}
         for key, node in nodes.items():
+            # Fix: Check port first, THEN pull data, THEN check if connected
             if node and node.port:
-                d = node.get_data() # Pull data safely using the thread lock
+                d = node.get_data() 
                 
                 if d.connected:
                     telemetry_packet[key] = {
@@ -37,17 +38,43 @@ def telemetry_broadcast_loop():
             else:
                 telemetry_packet[key] = {"connected": False}
         
-        # CRITICAL FIX: explicit broadcast and namespace forces the data to the browser
-        socketio.emit('telemetry_update', telemetry_packet, namespace='/')
-        socketio.sleep(0.05) # 50ms interval
-
+        socketio.emit('telemetry_update', telemetry_packet)
+        socketio.sleep(0.05)
+        
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@socketio.on('connect')
-def handle_connect():
-    print("[Web Server] SUCCESS: A browser window connected!")
+# --- NEW: Dynamic Port Management ---
+
+@socketio.on('request_ports')
+def handle_request_ports():
+    """Scans the host computer for available serial ports and sends them to the UI."""
+    ports = [port.device for port in serial.tools.list_ports.comports()]
+    socketio.emit('ports_list', ports)
+
+@socketio.on('connect_node')
+def handle_connect_node(data):
+    """Dynamically assigns a port and starts the serial thread."""
+    target_node = data.get('node')
+    port = data.get('port')
+    
+    if target_node in nodes and port:
+        print(f"[Web Server] Connecting {target_node} to {port}...")
+        nodes[target_node].stop() # Stop any existing connection safely
+        nodes[target_node].port = port
+        nodes[target_node].start()
+
+@socketio.on('disconnect_node')
+def handle_disconnect_node(data):
+    """Safely shuts down a serial thread and frees the port."""
+    target_node = data.get('node')
+    if target_node in nodes:
+        print(f"[Web Server] Disconnecting {target_node}...")
+        nodes[target_node].stop()
+        nodes[target_node].port = None
+
+# ------------------------------------
 
 @socketio.on('ui_command')
 def handle_ui_command(data):
@@ -61,14 +88,7 @@ def handle_ui_command(data):
         )
 
 if __name__ == '__main__':
-    # Start the hardware background threads
-    for node in nodes.values():
-        if node:
-            node.start()
-
-    # Spin up the WebSocket broadcast loop
+    # Start background loop (Arduinos will start dynamically from the UI)
     socketio.start_background_task(telemetry_broadcast_loop)
-
     print("[Web Server] Launching web controller on port 5000...")
-    # Run web server on port 5000, visible to the whole local network (0.0.0.0)
     socketio.run(app, host='0.0.0.0', port=5000, debug=False)

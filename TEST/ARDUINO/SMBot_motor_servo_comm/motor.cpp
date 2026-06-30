@@ -69,6 +69,10 @@ void MOTOR::Set_speed(float speedA,float speedB){
   _ENCODERB_SET_SPEED = speedB;
 }
 
+void MOTOR::Set_speed_rads(float speedA, float speedB){
+  MOTOR::Set_speed(speedA/RADSPERTICK,speedB/RADSPERTICK);
+}
+
 float MOTOR::Get_speed(int motor){
 
   return (float) (motor ? _ENCODERB_SPEED:_ENCODERA_SPEED);

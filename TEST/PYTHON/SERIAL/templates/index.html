@@ -14,11 +14,20 @@
         </header>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
-                <div class="flex justify-between items-center mb-4">
+            <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 flex flex-col">
+                <div class="flex justify-between items-center mb-2">
                     <h2 class="text-xl font-semibold text-white">Arduino 1 Control Node</h2>
                     <span id="ard1-status" class="px-2 py-1 rounded text-xs font-bold bg-red-900 text-red-300">DISCONNECTED</span>
                 </div>
+                
+                <div class="flex space-x-2 bg-gray-900 p-2 rounded-lg border border-gray-700 mb-4">
+                    <select id="ard1-port" class="flex-1 bg-gray-800 text-white text-sm rounded border border-gray-600 px-2 py-1 outline-none focus:border-teal-400 transition-colors">
+                        <option value="">Select Port...</option>
+                    </select>
+                    <button onclick="requestPorts()" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-white text-sm transition-colors" title="Scan for USB Ports">↻</button>
+                    <button id="ard1-connect-btn" onclick="toggleConnection('arduino1', 'ard1')" class="px-4 py-1 bg-blue-600 hover:bg-blue-500 font-semibold rounded text-white text-sm transition-colors">Connect</button>
+                </div>
+
                 <div class="grid grid-cols-2 gap-4 bg-gray-900 p-4 rounded-lg mb-6 text-sm">
                     <div>Time: <span id="ard1-time" class="font-mono text-teal-300">0</span> ms</div>
                     <div>IR Sensor: <span id="ard1-ir" class="font-mono text-amber-300">0</span></div>
@@ -45,11 +54,20 @@
                 </div>
             </div>
 
-            <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700">
-                <div class="flex justify-between items-center mb-4">
+            <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 flex flex-col">
+                <div class="flex justify-between items-center mb-2">
                     <h2 class="text-xl font-semibold text-white">Arduino 2 Control Node</h2>
                     <span id="ard2-status" class="px-2 py-1 rounded text-xs font-bold bg-red-900 text-red-300">DISCONNECTED</span>
                 </div>
+
+                <div class="flex space-x-2 bg-gray-900 p-2 rounded-lg border border-gray-700 mb-4">
+                    <select id="ard2-port" class="flex-1 bg-gray-800 text-white text-sm rounded border border-gray-600 px-2 py-1 outline-none focus:border-teal-400 transition-colors">
+                        <option value="">Select Port...</option>
+                    </select>
+                    <button onclick="requestPorts()" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-white text-sm transition-colors" title="Scan for USB Ports">↻</button>
+                    <button id="ard2-connect-btn" onclick="toggleConnection('arduino2', 'ard2')" class="px-4 py-1 bg-blue-600 hover:bg-blue-500 font-semibold rounded text-white text-sm transition-colors">Connect</button>
+                </div>
+
                 <div class="grid grid-cols-2 gap-4 bg-gray-900 p-4 rounded-lg mb-6 text-sm">
                     <div>Time: <span id="ard2-time" class="font-mono text-teal-300">0</span> ms</div>
                     <div>IR Sensor: <span id="ard2-ir" class="font-mono text-amber-300">0</span></div>
@@ -81,23 +99,74 @@
     <script>
         const socket = io();
 
-        // Let you know instantly if the Web UI is talking to Python
-        socket.on('connect', function() {
-            console.log("SUCCESS: Browser connected to Python Server!");
+        // On load, ask backend for available ports
+        socket.on('connect', () => {
+            requestPorts();
         });
 
-        // Handle streaming data updates
+        // Populate dropdowns when backend replies with ports
+        socket.on('ports_list', function(ports) {
+            ['ard1', 'ard2'].forEach(prefix => {
+                const select = document.getElementById(`${prefix}-port`);
+                const currentSelection = select.value; // Remember what they already picked
+                
+                select.innerHTML = '<option value="">Select Port...</option>';
+                ports.forEach(port => {
+                    const opt = document.createElement('option');
+                    opt.value = port;
+                    opt.innerText = port;
+                    select.appendChild(opt);
+                });
+
+                // Re-apply previous selection if it's still available
+                if (ports.includes(currentSelection)) {
+                    select.value = currentSelection;
+                }
+            });
+        });
+
+        function requestPorts() {
+            socket.emit('request_ports');
+        }
+
+        // Handle Connect/Disconnect Logic
+        function toggleConnection(nodeName, idPrefix) {
+            const btn = document.getElementById(`${idPrefix}-connect-btn`);
+            const isConnecting = btn.innerText === "Connect";
+
+            if (isConnecting) {
+                const port = document.getElementById(`${idPrefix}-port`).value;
+                if (!port) {
+                    alert("Please select a COM port first!");
+                    return;
+                }
+                socket.emit('connect_node', { node: nodeName, port: port });
+            } else {
+                socket.emit('disconnect_node', { node: nodeName });
+            }
+        }
+
         socket.on('telemetry_update', function(data) {
-            console.log("Incoming Data:", data); // Check this in your F12 Dev Tools Console!
+            console.log("Incoming Data:", data); // Add this line back!
             updateNodeUi('arduino1', 'ard1', data.arduino1);
             updateNodeUi('arduino2', 'ard2', data.arduino2);
         });
-
         function updateNodeUi(nodeKey, idPrefix, nodeData) {
             const statusEl = document.getElementById(`${idPrefix}-status`);
+            const btnEl = document.getElementById(`${idPrefix}-connect-btn`);
+            const selectEl = document.getElementById(`${idPrefix}-port`);
+
             if (nodeData && nodeData.connected) {
+                // UI changes for CONNECTED state
                 statusEl.innerText = "CONNECTED";
                 statusEl.className = "px-2 py-1 rounded text-xs font-bold bg-green-900 text-green-300";
+                
+                btnEl.innerText = "Disconnect";
+                btnEl.className = "px-4 py-1 bg-red-600 hover:bg-red-500 font-semibold rounded text-white text-sm transition-colors";
+                
+                // Lock the dropdown while connected
+                selectEl.disabled = true;
+                selectEl.classList.add("opacity-50", "cursor-not-allowed");
                 
                 document.getElementById(`${idPrefix}-time`).innerText = nodeData.timestamp;
                 document.getElementById(`${idPrefix}-ir`).innerText = nodeData.ir_distance;
@@ -105,8 +174,16 @@
                 document.getElementById(`${idPrefix}-w2`).innerText = nodeData.w2_actual;
                 document.getElementById(`${idPrefix}-servo`).innerText = nodeData.servo_angle;
             } else {
+                // UI changes for DISCONNECTED state
                 statusEl.innerText = "DISCONNECTED";
                 statusEl.className = "px-2 py-1 rounded text-xs font-bold bg-red-900 text-red-300";
+                
+                btnEl.innerText = "Connect";
+                btnEl.className = "px-4 py-1 bg-blue-600 hover:bg-blue-500 font-semibold rounded text-white text-sm transition-colors";
+                
+                // Unlock the dropdown
+                selectEl.disabled = false;
+                selectEl.classList.remove("opacity-50", "cursor-not-allowed");
             }
         }
 
@@ -117,12 +194,10 @@
             const w2 = document.getElementById(`${idPrefix}-w2-slider`).value;
             const servo = document.getElementById(`${idPrefix}-servo-slider`).value;
 
-            // Update text labels under sliders
             document.getElementById(`${idPrefix}-w1-val`).innerText = `${w1} rad/s`;
             document.getElementById(`${idPrefix}-w2-val`).innerText = `${w2} rad/s`;
             document.getElementById(`${idPrefix}-servo-val`).innerText = `${servo}°`;
 
-            // Emit data to backend Flask app instantly
             socket.emit('ui_command', {
                 node: nodeName,
                 w1: w1,
