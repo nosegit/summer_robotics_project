@@ -1,0 +1,20 @@
+# Uses the lightweight official ROS base image
+FROM ros:jazzy-ros-base
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Installs Nav2, SLAM Toolbox, and Gazebo (for simulation)
+RUN apt-get update && apt-get install -y \
+    ros-jazzy-navigation2 \
+    ros-jazzy-nav2-bringup \
+    ros-jazzy-slam-toolbox \
+    ros-jazzy-ros-gz \
+    ros-jazzy-nav2-minimal-tb* \
+    nano \
+    && rm -rf /var/lib/apt/lists/*
+
+# Automatically source ROS 2
+RUN echo "source /opt/ros/jazzy/setup.bash" >> /root/.bashrc
+
+# Set the working directory
+WORKDIR /root/ros2_ws

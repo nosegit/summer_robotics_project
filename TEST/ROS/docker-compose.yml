@@ -1,0 +1,65 @@
+# ==========================================
+# BASE TEMPLATES (Anchors)
+# ==========================================
+x-server-base: &server-base
+  build: 
+    context: .
+    dockerfile: Dockerfile.server
+  network_mode: host
+  privileged: true
+  shm_size: '4gb' # Prevents Gazebo from crashing
+  environment:
+    # Tells Nav2 which robot geometry to use
+    - TURTLEBOT3_MODEL=waffle
+    # Tells Gazebo exactly where to find the 3D meshes
+    - GZ_SIM_RESOURCE_PATH=/opt/ros/jazzy/share/nav2_minimal_tb3/models:/opt/ros/jazzy/share/nav2_minimal_tb4/models
+    - LIBGL_ALWAYS_SOFTWARE=1
+  volumes:
+    - ./src:/root/ros2_ws/src:rw
+
+x-gui-base: &gui-base
+  build: 
+    context: .
+    dockerfile: Dockerfile.gui
+  network_mode: host
+  environment:
+    - DISPLAY=:0
+    - WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-}
+    - XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-}
+    - QT_X11_NO_MITSHM=1
+    - QT_QPA_PLATFORM=xcb
+  volumes:
+    - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    - /mnt/wslg:/mnt/wslg:ro
+    - ./src:/root/ros2_ws/src:rw
+
+services:
+  # ==========================================
+  # PROFILE: DEV (Idle containers for coding)
+  # ==========================================
+  server_dev:
+    <<: *server-base
+    container_name: jazzy_server_dev
+    profiles: ["dev"]
+    command: tail -f /dev/null
+
+  gui_dev:
+    <<: *gui-base
+    container_name: jazzy_gui_dev
+    profiles: ["dev"]
+    command: tail -f /dev/null
+
+  # ==========================================
+  # PROFILE: TEST (Auto-launches Simulation & RViz)
+  # ==========================================
+  server_test:
+    <<: *server-base
+    container_name: jazzy_server_test
+    profiles: ["test"]
+    command: bash -c "ros2 launch nav2_bringup tb3_simulation_launch.py headless:=True slam:=True rviz:=False"
+
+  gui_test:
+    <<: *gui-base
+    container_name: jazzy_gui_test
+    profiles: ["test"]
+    command: bash -c "rviz2 -d /opt/ros/jazzy/share/nav2_bringup/rviz/nav2_default_view.rviz"
