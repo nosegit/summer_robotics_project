@@ -1,10 +1,10 @@
 #include <mbed.h>
 
 #include "motor.h"
-#include "robotstate.h"
 #include "communication.h"
 #include "arduinostate.h"
 #include "servocontroller.h"
+#include "infrared.h"
 
 #define ENABLEUSBSERIAL 1
 
@@ -17,7 +17,6 @@
 
 #define TICKPERREVOLUTION 1788  // 298*6
 
-// MOTOR _motor(MOTORDIRA, MOTORPWMA, MOTORENCODERA, MOTORDIRB, MOTORPWMB, MOTORENCODERB);
 MOTOR _motor(MOTORDIRA, MOTORPWMA, MOTORENCODERA, MOTORDIRB, MOTORPWMB, MOTORENCODERB);
 
 ARDUINO_STATE _arduino_state;
@@ -25,8 +24,13 @@ COMMUNICATION _communication;
 
 #define SERVOPIN P0_3
 
-SERVOController _servo(SERVOPIN, &_arduino_state);
+SERVOController _servo(SERVOPIN);
 
+#define I2C_SDA P0_31
+#define I2C_SCL P0_2
+
+mbed::I2C     _myi2c( I2C_SDA,I2C_SCL );
+INFRARED      _infrared(&_myi2c);
 
 void setup() {
   // put your setup code here, to run once:
@@ -57,6 +61,10 @@ void loop() {
 
   LocalState data = _arduino_state.getSnapshot();
   _motor.Set_speed_rads(data.target_w1, data.target_w2);
+  _servo.write((int)data.servo_angle);
+
+  _infrared.Begin();
+  _arduino_state.setSensors(_infrared.Get_distance());
 
 }
  

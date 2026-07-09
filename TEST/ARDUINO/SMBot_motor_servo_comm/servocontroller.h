@@ -3,9 +3,6 @@
 
 #include <Servo.h>
 #include <mbed.h>
-#include <rtos.h>
-
-#include "arduinostate.h"
 
 // 1. Structure to hold our "Key-Value" pairs
 struct PinMapping {
@@ -49,9 +46,8 @@ class SERVOController {
 
 public:
 
-  SERVOController (PinName servo_pin, ARDUINO_STATE* state_ptr){
+  SERVOController (PinName servo_pin){
     this->_servo_pin = servo_pin;
-    this->_state = state_ptr;
   }
 
   void begin(){
@@ -60,7 +56,12 @@ public:
     // Only attach and start if the Mbed pin was found in our dictionary
     if (ard_pin != -1) {
         _servo.attach(ard_pin, 500, 2500);
-        _thread_servo.start(mbed::callback(this, &SERVOController::loop));
+    }
+  }
+
+  void write(int angle){
+    if(angle >= 0 && angle <= 180){
+      _servo.write(angle);
     }
   }
 
@@ -69,16 +70,6 @@ private:
 
   PinName _servo_pin;
   Servo _servo;
-  rtos::Thread _thread_servo;
-  ARDUINO_STATE* _state;
-
-  void loop(){
-    // RTOS Threads require an infinite loop
-    while(true) {
-        _servo.write(_state->getServo());
-        rtos::ThisThread::sleep_for(33); 
-    }
-  }
 
   // 3. The "Dictionary Lookup" function
   int pinNameToArduinoPin(PinName pin) {

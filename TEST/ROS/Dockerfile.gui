@@ -1,21 +1,20 @@
-# Uses the heavy OSRF desktop image
+# Use the official ROS 2 Jazzy desktop image
 FROM osrf/ros:jazzy-desktop
 
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Added libxcb-cursor0 and qt6-wayland to fix the Qt plugin error
+# Install Gazebo integration, Nav2 views, robot models, and X11 fixes
 RUN apt-get update && apt-get install -y \
+    ros-jazzy-rmw-cyclonedds-cpp \      
+    ros-jazzy-ros-gz \
     ros-jazzy-nav2-bringup \
     ros-jazzy-nav2-minimal-tb* \
-    nano \
-    x11-apps \
-    mesa-utils \
     libxcb-cursor0 \
-    qt6-wayland \
     && rm -rf /var/lib/apt/lists/*
 
-# Automatically source ROS 2
+# Add ROS 2 sourcing to bashrc so it's ready when you attach a terminal
 RUN echo "source /opt/ros/jazzy/setup.bash" >> /root/.bashrc
 
 # Set the working directory
 WORKDIR /root/ros2_ws
+
+# Set a default command to keep the container running
+CMD ["tail", "-f", "/dev/null"]

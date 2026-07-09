@@ -9,11 +9,14 @@ x-server-base: &server-base
   privileged: true
   shm_size: '4gb' # Prevents Gazebo from crashing
   environment:
+    # Dedicated network channel for multi-machine discovery over Wi-Fi
+    - ROS_DOMAIN_ID=42
     # Tells Nav2 which robot geometry to use
     - TURTLEBOT3_MODEL=waffle
     # Tells Gazebo exactly where to find the 3D meshes
     - GZ_SIM_RESOURCE_PATH=/opt/ros/jazzy/share/nav2_minimal_tb3/models:/opt/ros/jazzy/share/nav2_minimal_tb4/models
     - LIBGL_ALWAYS_SOFTWARE=1
+    - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
   volumes:
     - ./src:/root/ros2_ws/src:rw
 
@@ -23,11 +26,14 @@ x-gui-base: &gui-base
     dockerfile: Dockerfile.gui
   network_mode: host
   environment:
+    # Dedicdocated network channel for multi-machine discovery over Wi-Fi
+    - ROS_DOMAIN_ID=42
     - DISPLAY=:0
     - WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-}
     - XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-}
     - QT_X11_NO_MITSHM=1
     - QT_QPA_PLATFORM=xcb
+    - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
   volumes:
     - /tmp/.X11-unix:/tmp/.X11-unix:rw
     - /mnt/wslg:/mnt/wslg:ro
@@ -56,7 +62,7 @@ services:
     <<: *server-base
     container_name: jazzy_server_test
     profiles: ["test"]
-    command: bash -c "ros2 launch nav2_bringup tb3_simulation_launch.py headless:=True slam:=True rviz:=False"
+    command: bash -c "ros2 launch nav2_bringup tb3_simulation_launch.py headless:=True slam:=True use_rviz:=False"
 
   gui_test:
     <<: *gui-base
