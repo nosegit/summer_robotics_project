@@ -3,13 +3,14 @@ FROM ros:jazzy-ros-base
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Installs Nav2, SLAM Toolbox, and Gazebo (for simulation)
+# Installs Nav2, SLAM, Gazebo, and minimal reference simulation dependencies
 RUN apt-get update && apt-get install -y \
     ros-jazzy-rmw-cyclonedds-cpp \
     ros-jazzy-navigation2 \
     ros-jazzy-nav2-bringup \
     ros-jazzy-slam-toolbox \
     ros-jazzy-ros-gz \
+    ros-jazzy-xacro \
     ros-jazzy-nav2-minimal-tb* \
     nano \
     && rm -rf /var/lib/apt/lists/*

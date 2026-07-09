@@ -7,14 +7,11 @@ x-server-base: &server-base
     dockerfile: Dockerfile.server
   network_mode: host
   privileged: true
-  shm_size: '4gb' # Prevents Gazebo from crashing
+  shm_size: '4gb'
   environment:
-    # Dedicated network channel for multi-machine discovery over Wi-Fi
     - ROS_DOMAIN_ID=42
-    # Tells Nav2 which robot geometry to use
-    - TURTLEBOT3_MODEL=waffle
-    # Tells Gazebo exactly where to find the 3D meshes
-    - GZ_SIM_RESOURCE_PATH=/opt/ros/jazzy/share/nav2_minimal_tb3/models:/opt/ros/jazzy/share/nav2_minimal_tb4/models
+    # Combined path: Searches your custom workspace build directory AND system TB3/TB4 model paths
+    - GZ_SIM_RESOURCE_PATH=/root/ros2_ws/install:/opt/ros/jazzy/share/nav2_minimal_tb3/models:/opt/ros/jazzy/share/nav2_minimal_tb4/models
     - LIBGL_ALWAYS_SOFTWARE=1
     - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
   volumes:
@@ -26,7 +23,6 @@ x-gui-base: &gui-base
     dockerfile: Dockerfile.gui
   network_mode: host
   environment:
-    # Dedicdocated network channel for multi-machine discovery over Wi-Fi
     - ROS_DOMAIN_ID=42
     - DISPLAY=:0
     - WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-}
@@ -56,16 +52,18 @@ services:
     command: tail -f /dev/null
 
   # ==========================================
-  # PROFILE: TEST (Auto-launches Simulation & RViz)
+  # PROFILE: TEST (Launches Reference TurtleBot Simulation)
   # ==========================================
   server_test:
     <<: *server-base
     container_name: jazzy_server_test
     profiles: ["test"]
+    # Launches the standard reference world using the minimal-tb library
     command: bash -c "ros2 launch nav2_bringup tb3_simulation_launch.py headless:=True slam:=True use_rviz:=False"
 
   gui_test:
     <<: *gui-base
     container_name: jazzy_gui_test
     profiles: ["test"]
-    command: bash -c "rviz2 -d /opt/ros/jazzy/share/nav2_bringup/rviz/nav2_default_view.rviz"
+    # Automatically triggers RViz preset to map the test world environment
+    command: bash -c "ros2 launch nav2_bringup rviz_launch.py"
