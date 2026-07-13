@@ -1,0 +1,23 @@
+digraph G {
+node [shape=box];
+"base_link" [label="base_link"];
+"chassis" [label="chassis"];
+"laser_frame" [label="laser_frame"];
+"front_left_wheel" [label="front_left_wheel"];
+"front_right_wheel" [label="front_right_wheel"];
+"rear_left_wheel" [label="rear_left_wheel"];
+"rear_right_wheel" [label="rear_right_wheel"];
+node [shape=ellipse, color=blue, fontcolor=blue];
+"base_link" -> "chassis_joint" [label="xyz: 0 0 0.115 \nrpy: 0 -0 0"]
+"chassis_joint" -> "chassis"
+"chassis" -> "laser_joint" [label="xyz: 0.15 0 0.095 \nrpy: 0 -0 0"]
+"laser_joint" -> "laser_frame"
+"base_link" -> "front_left_wheel_joint" [label="xyz: 0.22 0.23 0.1 \nrpy: 0 -0 0"]
+"front_left_wheel_joint" -> "front_left_wheel"
+"base_link" -> "front_right_wheel_joint" [label="xyz: 0.22 -0.23 0.1 \nrpy: 0 -0 0"]
+"front_right_wheel_joint" -> "front_right_wheel"
+"base_link" -> "rear_left_wheel_joint" [label="xyz: -0.22 0.23 0.1 \nrpy: 0 -0 0"]
+"rear_left_wheel_joint" -> "rear_left_wheel"
+"base_link" -> "rear_right_wheel_joint" [label="xyz: -0.22 -0.23 0.1 \nrpy: 0 -0 0"]
+"rear_right_wheel_joint" -> "rear_right_wheel"
+}
