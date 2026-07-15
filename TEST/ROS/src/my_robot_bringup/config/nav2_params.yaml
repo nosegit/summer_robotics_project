@@ -16,6 +16,7 @@ amcl:
     scan_topic: "scan"
     set_initial_pose: true
     initial_pose: [0.0, 0.0, 0.0, 0.0]
+    robot_model_type: "nav2_amcl::OmniMotionModel"
 
 bt_navigator:
   ros__parameters:
@@ -58,43 +59,76 @@ controller_server:
       xy_goal_tolerance: 0.25
       yaw_goal_tolerance: 0.25
 
-    # DWB Local Planner (Configured for Holonomic/Mecanum Translation)
-    FollowPath:
-      plugin: "dwb_core::DWBLocalPlanner"
-      debug_trajectory_details: true
-      min_vel_x: -0.26
-      max_vel_x: 0.26
-      min_vel_y: -0.26      # Enabled for Mecanum (Lateral movements)
-      max_vel_y: 0.26       # Enabled for Mecanum (Lateral movements)
-      max_vel_theta: 1.0
-      min_speed_xy: 0.0
-      max_speed_xy: 0.26
-      min_speed_theta: 0.0
-      acc_lim_x: 2.5
-      acc_lim_y: 2.5        # Lateral acceleration limit
-      acc_lim_theta: 3.2
-      decel_lim_x: -2.5
-      decel_lim_y: -2.5
-      decel_lim_theta: -3.2
-      vx_samples: 20
-      vy_samples: 20        # Sample lateral speeds
-      vtheta_samples: 20
-      # Basic DWB Critics
-      # critics: ["ObstacleFootprint", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
-      # ObstacleFootprint.scale: 0.02
-      # PathAlign.scale: 32.0 # 32.0
-      # PathAlign.forward_point_distance: 0.325
-      # GoalAlign.scale: 24.0 # 24.0
-      # GoalAlign.forward_point_distance: 0.325
-      # PathDist.scale: 32.0
-      # GoalDist.scale: 24.0
+    # # DWB Local Planner (Configured for Holonomic/Mecanum Translation)
+    # FollowPath:
+    #   plugin: "dwb_core::DWBLocalPlanner"
+    #   debug_trajectory_details: true
+    #   min_vel_x: -0.26
+    #   max_vel_x: 0.26
+    #   min_vel_y: -0.26      # Enabled for Mecanum (Lateral movements)
+    #   max_vel_y: 0.26       # Enabled for Mecanum (Lateral movements)
+    #   max_vel_theta: 1.0
+    #   min_speed_xy: 0.0
+    #   max_speed_xy: 0.26
+    #   min_speed_theta: 0.0
+    #   acc_lim_x: 2.5
+    #   acc_lim_y: 2.5        # Lateral acceleration limit
+    #   acc_lim_theta: 3.2
+    #   decel_lim_x: -2.5
+    #   decel_lim_y: -2.5
+    #   decel_lim_theta: -3.2
+    #   vx_samples: 20
+    #   vy_samples: 20        # Sample lateral speeds
+    #   vtheta_samples: 20
+    #   # Basic DWB Critics
+    #   # critics: ["ObstacleFootprint", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
+    #   # ObstacleFootprint.scale: 0.02
+    #   # PathAlign.scale: 32.0 # 32.0
+    #   # PathAlign.forward_point_distance: 0.325
+    #   # GoalAlign.scale: 24.0 # 24.0
+    #   # GoalAlign.forward_point_distance: 0.325
+    #   # PathDist.scale: 32.0
+    #   # GoalDist.scale: 24.0
 
-      critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalDist", "PathDist"]
-      PathDist.scale: 32.0
-      GoalDist.scale: 24.0
-      BaseObstacle.scale: 0.02
-      Oscillation.scale: 1.0
-      RotateToGoal.scale: 0.1
+    #   critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalDist", "PathDist"]
+    #   PathDist.scale: 32.0
+    #   GoalDist.scale: 24.0
+    #   BaseObstacle.scale: 0.02
+    #   Oscillation.scale: 1.0
+    #   RotateToGoal.scale: 0.1
+
+    # --- MPPI Controller Configuration ---
+    FollowPath:
+      plugin: "nav2_mppi_controller::MPPIController"
+      time_steps: 56
+      model_dt: 0.05
+      batch_size: 2000
+      
+      # TELL MPPI IT IS A MECANUM ROBOT
+      motion_model: "Omni"
+      
+      # Velocity limits (Make X and Y equal for smooth diagonal movement)
+      vx_max: 0.5
+      vx_min: -0.5
+      vy_max: 0.5
+      vy_min: -0.5
+      vtheta_max: 1.0
+
+      vx_std: 0.2
+      vy_std: 0.2
+      wz_std: 0.4
+      
+      # Remove "PreferForwardCritic" and "PathAngleCritic" to prevent RC-car behavior
+      critics: ["ConstraintCritic", "GoalCritic", "GoalAngleCritic", "PathAlignCritic", "PathFollowCritic"]
+      
+      # Critic Weights
+      ConstraintCritic.scale: 20.0
+      PathFollowCritic.scale: 5.0
+      GoalCritic.scale: 3.0
+      
+      # Turn these down so the robot strafes instead of turning to face the path
+      GoalAngleCritic.scale: 0.0 
+      PathAlignCritic.scale: 0.0    
 
 planner_server:
   ros__parameters:
@@ -263,6 +297,25 @@ slam_toolbox:
     transform_timeout: 0.2
     tf_buffer_duration: 30.0
 
+velocity_smoother:
+  ros__parameters:
+    smoothing_frequency: 20.0
+    scale_velocities: False
+    feedback: "OPEN_LOOP"
+    
+    # FORMAT IS: [X, Y, THETA]
+    # This is the magic unlock: Ensure the middle number (Y) matches your X limit!
+    max_velocity: [0.5, 0.5, 1.0]     
+    min_velocity: [-0.5, -0.5, -1.0]  
+    
+    # You MUST also provide Y-axis acceleration limits, or it will refuse to slide
+    max_accel: [2.5, 2.5, 3.2]
+    max_decel: [-2.5, -2.5, -3.2]
+    
+    deadband_velocity: [0.0, 0.0, 0.0]
+    odom_topic: "odom"
+    odom_duration: 0.1
+
 # ==============================================================================
 # LIFECYCLE MANAGEMENT (Brings the stack up in sequence)
 # ==============================================================================
@@ -271,10 +324,11 @@ lifecycle_manager_navigation:
     use_sim_time: true
     autostart: true
     node_names: ['controller_server',
+                'velocity_smoother',
                 'planner_server',
                 'behavior_server',
                 'bt_navigator',
-                'collision_monitor'] # <--- Add this here if it isn't there already!
+                'collision_monitor'] #
 
 lifecycle_manager_localization:
   ros__parameters:
