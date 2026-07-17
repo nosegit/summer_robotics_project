@@ -1,9 +1,3 @@
-That `docker compose` setup with profiles is incredibly clean. It makes spinning up this entire complex stack a one-liner!
-
-Here is the exact updated, copy-pasteable `README.md` section tailored specifically for your `docker compose` workflow, complete with the correct ROS 2 syntax for launching RViz with simulation time and your specific config file.
-
----
-
 ### 🐳 Launch Instructions (Docker Compose Setup)
 
 This package is designed to run across two separate Docker containers managed by Docker Compose:
@@ -52,7 +46,7 @@ Once inside, source your workspace and launch RViz using your pre-configured lay
 
 ```bash
 source install/setup.bash
-rviz2 -d src/nav_2view.rviz --ros-args -p use_sim_time:=true
+rviz2 -d src/nav2_view.rviz --ros-args -p use_sim_time:=true
 
 ```
 
