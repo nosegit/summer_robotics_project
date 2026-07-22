@@ -5,6 +5,7 @@
 #include <rtos.h>
 #include <Arduino_LSM9DS1.h> // Back to official Arduino library
 #include <ReefwingAHRS.h>    // Keeping Reefwing just for the Madgwick filter
+#include <ReefwingLSM9DS1.h>
 
 struct ROSImuData {
     float qx, qy, qz, qw;
@@ -15,10 +16,12 @@ struct ROSImuData {
 class NanoIMU {
 public:
     NanoIMU();
-    void begin(uint32_t update_interval_ms = 20);
+    // void begin(uint32_t update_interval_ms = 20);
+    bool begin();
     ROSImuData getLatestData();
 
 private:
+    ReefwingLSM9DS1 _imu;
     ReefwingAHRS _ahrs;
 
     // Manual calibration offsets

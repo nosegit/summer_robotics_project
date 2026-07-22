@@ -4,7 +4,7 @@ from arduino_node import ArduinoNode
 # --- CONFIGURATION ---
 # Change this to match your actual port
 # SERIAL_PORT = '/dev/ttyACM0' 
-SERIAL_PORT = 'COM5' 
+SERIAL_PORT = 'COM7' 
 BAUDRATE = 115200
 
 def main():
