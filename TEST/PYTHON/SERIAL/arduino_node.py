@@ -5,9 +5,10 @@ import time
 from dataclasses import dataclass
 
 # --- FIXED CONFIGURATIONS ---
-TELEMETRY_FMT = '<IhhHB'   
-TELEMETRY_PAYLOAD_SIZE = 11 
-TELEMETRY_PACKET_SIZE = 13  
+# Struct format: 1 uint32 (I), 2 int16 (h), 2 uint16 (H), 1 uint8 (B), 10 int16 (h)
+TELEMETRY_FMT = '<IhhHHBhhhhhhhhhh'   
+TELEMETRY_PAYLOAD_SIZE = 33 
+TELEMETRY_PACKET_SIZE = 35  
 COMMAND_FMT = '<hhB'       
 
 @dataclass
@@ -15,8 +16,22 @@ class ArduinoData:
     timestamp: int = 0
     w1_actual: float = 0.0
     w2_actual: float = 0.0
-    ir_distance: int = 0
+    ir_distance_1: int = 0
+    ir_distance_2: int = 0
     servo_angle: float = 0.0
+    
+    # IMU Data
+    qx: float = 0.0
+    qy: float = 0.0
+    qz: float = 0.0
+    qw: float = 1.0
+    gx: float = 0.0
+    gy: float = 0.0
+    gz: float = 0.0
+    ax: float = 0.0
+    ay: float = 0.0
+    az: float = 0.0
+    
     connected: bool = False
 
 class ArduinoNode:
@@ -30,7 +45,7 @@ class ArduinoNode:
         self.lock = threading.Lock()
         self.running = False
         self.thread = None
-        self.last_packet_time = 0  # Tracks last valid telemetry packet timestamp
+        self.last_packet_time = 0
 
     def start(self):
         if not self.port:
@@ -72,9 +87,15 @@ class ArduinoNode:
         with self.lock:
             # Active Heartbeat: consider connected only if we got a valid packet in last 1.5s
             is_alive = (time.time() - self.last_packet_time) < 1.5
+            
+            # Return a fresh copy of the expanded dataclass
             return ArduinoData(
                 self.data.timestamp, self.data.w1_actual, self.data.w2_actual,
-                self.data.ir_distance, self.data.servo_angle, is_alive
+                self.data.ir_distance_1, self.data.ir_distance_2, self.data.servo_angle,
+                self.data.qx, self.data.qy, self.data.qz, self.data.qw,
+                self.data.gx, self.data.gy, self.data.gz,
+                self.data.ax, self.data.ay, self.data.az,
+                is_alive
             )
 
     def _read_loop(self):
@@ -91,18 +112,35 @@ class ArduinoNode:
                     calc_cs = 0
                     for b in payload:
                         calc_cs ^= b
+                        
                     if calc_cs == received_checksum:
                         unpacked = struct.unpack(TELEMETRY_FMT, payload)
                         with self.lock:
+                            # Base data
                             self.data.timestamp = unpacked[0]
                             self.data.w1_actual = unpacked[1] / 1000.0
                             self.data.w2_actual = unpacked[2] / 1000.0
-                            self.data.ir_distance = unpacked[3]
-                            self.data.servo_angle = float(unpacked[4])
-                            self.last_packet_time = time.time()  # Feed the heartbeat
+                            self.data.ir_distance_1 = unpacked[3]
+                            self.data.ir_distance_2 = unpacked[4]
+                            self.data.servo_angle = float(unpacked[5])
+                            
+                            # IMU Quaternions (scaled by 10000)
+                            self.data.qx = unpacked[6] / 10000.0
+                            self.data.qy = unpacked[7] / 10000.0
+                            self.data.qz = unpacked[8] / 10000.0
+                            self.data.qw = unpacked[9] / 10000.0
+                            
+                            # IMU Gyro & Accel (scaled by 1000)
+                            self.data.gx = unpacked[10] / 1000.0
+                            self.data.gy = unpacked[11] / 1000.0
+                            self.data.gz = unpacked[12] / 1000.0
+                            self.data.ax = unpacked[13] / 1000.0
+                            self.data.ay = unpacked[14] / 1000.0
+                            self.data.az = unpacked[15] / 1000.0
+
+                            self.last_packet_time = time.time()
                 else:
-                    # CRITICAL FIX: Relinquish control to the GIL so Flask can run
-                    time.sleep(0.002)
+                    time.sleep(0.01)
             except Exception as e:
                 if self.running:
                     print(f"[{self.name}] Read Error: {e}")

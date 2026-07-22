@@ -2,8 +2,8 @@ import time
 from arduino_node import ArduinoNode
 
 # --- CONFIGURATION ---
-# Change this to match your actual port (e.g., '/dev/ttyACM0' on Pi or 'COM3' on Windows)
-# SERIAL_PORT = '/dev/ttyUSB0' 
+# Change this to match your actual port
+# SERIAL_PORT = '/dev/ttyACM0' 
 SERIAL_PORT = 'COM5' 
 BAUDRATE = 115200
 
@@ -21,19 +21,23 @@ def main():
     
     print("\nListening for incoming telemetry packets... Press Ctrl+C to stop.\n")
     
-    # Print a clean tabular header
-    header = f"{'Timestamp (ms)':<15} | {'W1 Act (rad/s)':<15} | {'W2 Act (rad/s)':<15} | {'IR Dist':<10} | {'Servo Angle':<12}"
-    print(header)
-    print("-" * len(header))
-    
     try:
         while True:
             # Safely extract the latest decoded snapshot from the node
             data = node.get_data()
             
             if data.connected:
-                # Print the decoded floats/integers directly
-                print(f"{data.timestamp:<15} | {data.w1_actual:<15.3f} | {data.w2_actual:<15.3f} | {data.ir_distance:<10} | {data.servo_angle:<12.1f}")
+                # Clear terminal and print block format to accommodate the large amount of data
+                print("\033[H\033[J", end="")  # ANSI escape to clear screen and move cursor home
+                
+                print(f"=== TELEMETRY SNAPSHOT | Time: {data.timestamp} ms ===")
+                print(f"MOTORS: W1: {data.w1_actual:+.3f} rad/s  | W2: {data.w2_actual:+.3f} rad/s")
+                print(f"SENSOR: IR1: {data.ir_distance_1} mm | IR2: {data.ir_distance_2} mm | Servo: {data.servo_angle:.1f}°")
+                print("-" * 50)
+                print(f"IMU QUAT:  Qx: {data.qx:+.4f} | Qy: {data.qy:+.4f} | Qz: {data.qz:+.4f} | Qw: {data.qw:+.4f}")
+                print(f"IMU GYRO:  Gx: {data.gx:+.3f} | Gy: {data.gy:+.3f} | Gz: {data.gz:+.3f} rad/s")
+                print(f"IMU ACCEL: Ax: {data.ax:+.3f} | Ay: {data.ay:+.3f} | Az: {data.az:+.3f} m/s^2")
+                print("==================================================")
             else:
                 # If serial port drops or fails to open
                 print("Connecting/Waiting for data packets...", end="\r")

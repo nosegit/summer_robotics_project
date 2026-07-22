@@ -8,14 +8,23 @@
 // --- NEW DISTRIBUTED PROTOCOL DEFINITIONS ---
 
 // 1. OUTGOING: Telemetry (Arduino -> Raspberry Pi)
-// Size: 13 Bytes (Start + Timestamp + 3*2 + 1 + Checksum)
+// Size: 35 Bytes (1 Sync + 4 Time + 4 Motor + 4 IR + 1 Servo + 20 IMU + 1 CS)
 struct __attribute__((packed)) ArduinoTelemetryPacket {
     uint8_t startByte = 0xA5;    // Sync Header
     uint32_t timestamp;          // 4 bytes (millis)
+    
     int16_t w1_act;              // 2 bytes (Actual Motor 1 Speed: rad/s * 1000)
     int16_t w2_act;              // 2 bytes (Actual Motor 2 Speed: rad/s * 1000)
-    uint16_t ir_dist;            // 2 bytes (IR Distance: raw value or mm)
-    uint8_t servo_ang;           // 1 bytes (Current Servo Angle: degree)
+    
+    uint16_t ir_dist_1;          // 2 bytes (IR Distance 1: raw value or mm)
+    uint16_t ir_dist_2;          // 2 bytes (IR Distance 2: raw value or mm)
+    uint8_t servo_ang;           // 1 byte  (Current Servo Angle: degree)
+    
+    // IMU Data (10 * 2 bytes = 20 bytes)
+    int16_t imu_qx, imu_qy, imu_qz, imu_qw;  // Quaternions * 10000
+    int16_t imu_gx, imu_gy, imu_gz;          // Gyro (rad/s) * 1000
+    int16_t imu_ax, imu_ay, imu_az;          // Accel (m/s^2) * 1000
+    
     uint8_t checksum;            // 1 byte (XOR payload check)
 };
 
@@ -54,11 +63,11 @@ private:
                     processIncomingByte(_serialPort->read());
                 }
 
-                // 2. Send Local Telemetry up to Raspberry Pi at ~30Hz
+                // 2. Send Local Telemetry up to Raspberry Pi at ~50Hz
                 sendTelemetry();
             }
             
-            rtos::ThisThread::sleep_for(33); 
+            rtos::ThisThread::sleep_for(20); 
         }
     }
 
@@ -113,7 +122,6 @@ private:
         // Write to local Arduino state layout
         _state->setTargetSpeeds(w1_target, w2_target);
         _state->setTargetServo(servo_target); 
-        
     }
 
     void sendTelemetry() {
@@ -122,11 +130,28 @@ private:
         ArduinoTelemetryPacket pkt;
         pkt.timestamp = millis();
         
+        // Pack Standard Data
         pkt.w1_act = (int16_t)(data.actual_w1 * 1000.0f);
         pkt.w2_act = (int16_t)(data.actual_w2 * 1000.0f);
-        pkt.ir_dist = (uint16_t)data.ir_distance;
+        pkt.ir_dist_1 = (uint16_t)data.ir_distance_1;
+        pkt.ir_dist_2 = (uint16_t)data.ir_distance_2;
         pkt.servo_ang = (uint8_t)(data.servo_angle);
 
+        // Pack IMU Data (Quaternions scaled by 10000, others scaled by 1000)
+        pkt.imu_qx = (int16_t)(data.qx * 10000.0f);
+        pkt.imu_qy = (int16_t)(data.qy * 10000.0f);
+        pkt.imu_qz = (int16_t)(data.qz * 10000.0f);
+        pkt.imu_qw = (int16_t)(data.qw * 10000.0f);
+        
+        pkt.imu_gx = (int16_t)(data.gx * 1000.0f);
+        pkt.imu_gy = (int16_t)(data.gy * 1000.0f);
+        pkt.imu_gz = (int16_t)(data.gz * 1000.0f);
+        
+        pkt.imu_ax = (int16_t)(data.ax * 1000.0f);
+        pkt.imu_ay = (int16_t)(data.ay * 1000.0f);
+        pkt.imu_az = (int16_t)(data.az * 1000.0f);
+
+        // Calculate XOR Checksum over payload
         pkt.checksum = 0;
         uint8_t* ptr = (uint8_t*)&pkt;
         for (size_t i = 1; i < sizeof(ArduinoTelemetryPacket) - 1; i++) {

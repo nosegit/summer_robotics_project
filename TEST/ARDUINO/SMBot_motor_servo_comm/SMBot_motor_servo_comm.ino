@@ -5,6 +5,7 @@
 #include "arduinostate.h"
 #include "servocontroller.h"
 #include "infrared.h"
+#include "NanoIMU.h"
 
 #define ENABLEUSBSERIAL 1
 
@@ -30,7 +31,9 @@ SERVOController _servo(SERVOPIN);
 #define I2C_SCL P0_2
 
 mbed::I2C     _myi2c( I2C_SDA,I2C_SCL );
-INFRARED      _infrared(&_myi2c);
+INFRARED      _infrared[2] = {(&_myi2c), (&_myi2c)};
+
+NanoIMU _IMU;
 
 void setup() {
   // put your setup code here, to run once:
@@ -49,6 +52,11 @@ void setup() {
 
   _servo.begin();
 
+  _infrared[0].set_I2C_BUS(0);
+  _infrared[1].set_I2C_BUS(1);
+
+  _IMU.begin();
+
 }
 
 void loop() {
@@ -63,8 +71,14 @@ void loop() {
   _motor.Set_speed_rads(data.target_w1, data.target_w2);
   _servo.write((int)data.servo_angle);
 
-  _infrared.Begin();
-  _arduino_state.setSensors(_infrared.Get_distance());
+  _infrared[1].Begin();
+  _infrared[0].Begin();
+  _arduino_state.setSensors(_infrared[0].Get_distance(), _infrared[1].Get_distance());
+
+  ROSImuData imu_data = _IMU.getLatestData();
+  _arduino_state.setIMU(imu_data.qx, imu_data.qy, imu_data.qz, imu_data.qw,
+                        imu_data.gx, imu_data.gy, imu_data.gz,
+                        imu_data.ax, imu_data.ay, imu_data.az);
 
 }
  

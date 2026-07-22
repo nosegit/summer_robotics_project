@@ -14,7 +14,7 @@ class MOTOR{
   const float RADSPERTICK = (2.0*PI)/TICKPERREVOLUTION;
 
   /* PID Variables */
-  const float   _PID_INTERVAL_SEC = 0.05;
+  const float   _PID_INTERVAL_SEC = 0.05; // 20hz
   mbed::Ticker  _PID_TICKER;
   rtos::Thread  _THREAD_PID;
 
