@@ -61,7 +61,9 @@ public:
 
   void write(int angle){
     if(angle >= 0 && angle <= 180){
-      _servo.write(angle);
+      if(_servo.read()!=angle){
+        _servo.write(angle);
+      }
     }
   }
 

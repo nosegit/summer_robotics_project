@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Robot Web Control Center</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen p-6">
@@ -14,6 +15,7 @@
         </header>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- ARDUINO 1 NODE -->
             <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 flex flex-col">
                 <div class="flex justify-between items-center mb-2">
                     <h2 class="text-xl font-semibold text-white">Arduino 1 Control Node</h2>
@@ -28,13 +30,46 @@
                     <button id="ard1-connect-btn" onclick="toggleConnection('arduino1', 'ard1')" class="px-4 py-1 bg-blue-600 hover:bg-blue-500 font-semibold rounded text-white text-sm transition-colors">Connect</button>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4 bg-gray-900 p-4 rounded-lg mb-6 text-sm">
+                <div class="grid grid-cols-2 gap-2 bg-gray-900 p-3 rounded-lg mb-4 text-xs">
                     <div>Time: <span id="ard1-time" class="font-mono text-teal-300">0</span> ms</div>
-                    <div>IR Sensor: <span id="ard1-ir" class="font-mono text-amber-300">0</span></div>
+                    <div>Servo: <span id="ard1-servo" class="font-mono text-purple-300">0.00</span>°</div>
+                    <div>IR 1: <span id="ard1-ir1" class="font-mono text-amber-300">0</span> mm</div>
+                    <div>IR 2: <span id="ard1-ir2" class="font-mono text-amber-300">0</span> mm</div>
                     <div>W1 Act: <span id="ard1-w1" class="font-mono text-green-300">0.00</span> rad/s</div>
                     <div>W2 Act: <span id="ard1-w2" class="font-mono text-green-300">0.00</span> rad/s</div>
-                    <div class="col-span-2">Servo Act: <span id="ard1-servo" class="font-mono text-purple-300">0.00</span>°</div>
                 </div>
+
+                <!-- 3D CUBE VISUALIZER (ROS Z-UP FRAME) -->
+                <div class="bg-gray-900 p-3 rounded-lg mb-4 text-xs border border-gray-700">
+                    <div class="flex justify-between items-center border-b border-gray-700 pb-1 mb-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-gray-400 font-bold">IMU ROS Frame</span>
+                            <span class="text-[10px] font-mono text-gray-500">(<span class="text-red-400">X:Fwd</span> <span class="text-green-400">Y:Left</span> <span class="text-blue-400">Z:Up</span>)</span>
+                        </div>
+                        <button onclick="tareIMU('arduino1')" class="px-2 py-0.5 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded text-[10px] text-teal-300 transition-colors">
+                            Zero IMU
+                        </button>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div id="ard1-3d-canvas" class="w-36 h-36 bg-gray-950 rounded border border-gray-800 flex justify-center items-center overflow-hidden"></div>
+                        
+                        <div class="flex-1 ml-4 space-y-1">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Quat:</span> 
+                                <span class="font-mono text-blue-300"><span id="ard1-qx">0.00</span>, <span id="ard1-qy">0.00</span>, <span id="ard1-qz">0.00</span>, <span id="ard1-qw">1.00</span></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Gyro:</span> 
+                                <span class="font-mono text-pink-300"><span id="ard1-gx">0.00</span>, <span id="ard1-gy">0.00</span>, <span id="ard1-gz">0.00</span></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Accel:</span> 
+                                <span class="font-mono text-yellow-300"><span id="ard1-ax">0.00</span>, <span id="ard1-ay">0.00</span>, <span id="ard1-az">0.00</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="space-y-4">
                     <div>
                         <label class="block text-xs uppercase tracking-wider text-gray-400 mb-1">Motor 1 Target Velocity</label>
@@ -54,6 +89,7 @@
                 </div>
             </div>
 
+            <!-- ARDUINO 2 NODE -->
             <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 flex flex-col">
                 <div class="flex justify-between items-center mb-2">
                     <h2 class="text-xl font-semibold text-white">Arduino 2 Control Node</h2>
@@ -68,13 +104,46 @@
                     <button id="ard2-connect-btn" onclick="toggleConnection('arduino2', 'ard2')" class="px-4 py-1 bg-blue-600 hover:bg-blue-500 font-semibold rounded text-white text-sm transition-colors">Connect</button>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4 bg-gray-900 p-4 rounded-lg mb-6 text-sm">
+                <div class="grid grid-cols-2 gap-2 bg-gray-900 p-3 rounded-lg mb-4 text-xs">
                     <div>Time: <span id="ard2-time" class="font-mono text-teal-300">0</span> ms</div>
-                    <div>IR Sensor: <span id="ard2-ir" class="font-mono text-amber-300">0</span></div>
+                    <div>Servo: <span id="ard2-servo" class="font-mono text-purple-300">0.00</span>°</div>
+                    <div>IR 1: <span id="ard2-ir1" class="font-mono text-amber-300">0</span> mm</div>
+                    <div>IR 2: <span id="ard2-ir2" class="font-mono text-amber-300">0</span> mm</div>
                     <div>W1 Act: <span id="ard2-w1" class="font-mono text-green-300">0.00</span> rad/s</div>
                     <div>W2 Act: <span id="ard2-w2" class="font-mono text-green-300">0.00</span> rad/s</div>
-                    <div class="col-span-2">Servo Act: <span id="ard2-servo" class="font-mono text-purple-300">0.00</span>°</div>
                 </div>
+
+                <!-- 3D CUBE VISUALIZER (ROS Z-UP FRAME) -->
+                <div class="bg-gray-900 p-3 rounded-lg mb-4 text-xs border border-gray-700">
+                    <div class="flex justify-between items-center border-b border-gray-700 pb-1 mb-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-gray-400 font-bold">IMU ROS Frame</span>
+                            <span class="text-[10px] font-mono text-gray-500">(<span class="text-red-400">X:Fwd</span> <span class="text-green-400">Y:Left</span> <span class="text-blue-400">Z:Up</span>)</span>
+                        </div>
+                        <button onclick="tareIMU('arduino2')" class="px-2 py-0.5 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded text-[10px] text-teal-300 transition-colors">
+                            Zero IMU
+                        </button>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div id="ard2-3d-canvas" class="w-36 h-36 bg-gray-950 rounded border border-gray-800 flex justify-center items-center overflow-hidden"></div>
+                        
+                        <div class="flex-1 ml-4 space-y-1">
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Quat:</span> 
+                                <span class="font-mono text-blue-300"><span id="ard2-qx">0.00</span>, <span id="ard2-qy">0.00</span>, <span id="ard2-qz">0.00</span>, <span id="ard2-qw">1.00</span></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Gyro:</span> 
+                                <span class="font-mono text-pink-300"><span id="ard2-gx">0.00</span>, <span id="ard2-gy">0.00</span>, <span id="ard2-gz">0.00</span></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-500">Accel:</span> 
+                                <span class="font-mono text-yellow-300"><span id="ard2-ax">0.00</span>, <span id="ard2-ay">0.00</span>, <span id="ard2-az">0.00</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="space-y-4">
                     <div>
                         <label class="block text-xs uppercase tracking-wider text-gray-400 mb-1">Motor 1 Target Velocity</label>
@@ -98,17 +167,89 @@
 
     <script>
         const socket = io();
+        const cubes = {}; 
+        const tareQuaternions = {
+            arduino1: new THREE.Quaternion(),
+            arduino2: new THREE.Quaternion()
+        };
 
-        // On load, ask backend for available ports
+        // --- SETUP THREE.JS 3D SCENES (ROS Z-UP FRAME) ---
+        function create3DScene(containerId, nodeKey) {
+            const container = document.getElementById(containerId);
+            const width = container.clientWidth || 144;
+            const height = container.clientHeight || 144;
+
+            const scene = new THREE.Scene();
+            
+            // Set Z as UP vector for ROS Frame
+            const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+            camera.up.set(0, 0, 1); 
+            camera.position.set(3.0, -3.0, 2.0); 
+            camera.lookAt(0, 0, 0);
+
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(width, height);
+            container.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(2, -3, 4);
+            scene.add(dirLight);
+
+            // World Axes (Red=X/Fwd, Green=Y/Left, Blue=Z/Up)
+            const worldAxes = new THREE.AxesHelper(1.2);
+            worldAxes.material.opacity = 0.3;
+            worldAxes.material.transparent = true;
+            scene.add(worldAxes);
+
+            const materials = [
+                new THREE.MeshLambertMaterial({ color: 0xef4444, transparent: true, opacity: 0.85 }), // +X Forward (Red)
+                new THREE.MeshLambertMaterial({ color: 0x64748b, transparent: true, opacity: 0.85 }), // -X Back (Gray)
+                new THREE.MeshLambertMaterial({ color: 0x22c55e, transparent: true, opacity: 0.85 }), // +Y Left (Green)
+                new THREE.MeshLambertMaterial({ color: 0xeab308, transparent: true, opacity: 0.85 }), // -Y Right (Yellow)
+                new THREE.MeshLambertMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.85 }), // +Z Up (Blue)
+                new THREE.MeshLambertMaterial({ color: 0xa855f7, transparent: true, opacity: 0.85 })  // -Z Down (Purple)
+            ];
+
+            const geometry = new THREE.BoxGeometry(1.5, 1.2, 0.3);
+            const cube = new THREE.Mesh(geometry, materials);
+            
+            const localAxes = new THREE.AxesHelper(1.4);
+            cube.add(localAxes);
+
+            scene.add(cube);
+            cubes[nodeKey] = cube;
+
+            function animate() {
+                requestAnimationFrame(animate);
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+
+        function tareIMU(nodeKey) {
+            if (cubes[nodeKey] && cubes[nodeKey].userData.lastRawQuaternion) {
+                tareQuaternions[nodeKey].copy(cubes[nodeKey].userData.lastRawQuaternion);
+                console.log(`[IMU] Zero reference set for ${nodeKey}`);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            create3DScene('ard1-3d-canvas', 'arduino1');
+            create3DScene('ard2-3d-canvas', 'arduino2');
+        });
+
+        // --- SOCKET COMMUNICATION ---
         socket.on('connect', () => {
             requestPorts();
         });
 
-        // Populate dropdowns when backend replies with ports
         socket.on('ports_list', function(ports) {
             ['ard1', 'ard2'].forEach(prefix => {
                 const select = document.getElementById(`${prefix}-port`);
-                const currentSelection = select.value; // Remember what they already picked
+                const currentSelection = select.value; 
                 
                 select.innerHTML = '<option value="">Select Port...</option>';
                 ports.forEach(port => {
@@ -118,7 +259,6 @@
                     select.appendChild(opt);
                 });
 
-                // Re-apply previous selection if it's still available
                 if (ports.includes(currentSelection)) {
                     select.value = currentSelection;
                 }
@@ -129,7 +269,6 @@
             socket.emit('request_ports');
         }
 
-        // Handle Connect/Disconnect Logic
         function toggleConnection(nodeName, idPrefix) {
             const btn = document.getElementById(`${idPrefix}-connect-btn`);
             const isConnecting = btn.innerText === "Connect";
@@ -147,41 +286,70 @@
         }
 
         socket.on('telemetry_update', function(data) {
-            console.log("Incoming Data:", data); // Add this line back!
             updateNodeUi('arduino1', 'ard1', data.arduino1);
             updateNodeUi('arduino2', 'ard2', data.arduino2);
         });
+
         function updateNodeUi(nodeKey, idPrefix, nodeData) {
             const statusEl = document.getElementById(`${idPrefix}-status`);
             const btnEl = document.getElementById(`${idPrefix}-connect-btn`);
             const selectEl = document.getElementById(`${idPrefix}-port`);
 
             if (nodeData && nodeData.connected) {
-                // UI changes for CONNECTED state
                 statusEl.innerText = "CONNECTED";
                 statusEl.className = "px-2 py-1 rounded text-xs font-bold bg-green-900 text-green-300";
                 
                 btnEl.innerText = "Disconnect";
                 btnEl.className = "px-4 py-1 bg-red-600 hover:bg-red-500 font-semibold rounded text-white text-sm transition-colors";
                 
-                // Lock the dropdown while connected
                 selectEl.disabled = true;
                 selectEl.classList.add("opacity-50", "cursor-not-allowed");
                 
                 document.getElementById(`${idPrefix}-time`).innerText = nodeData.timestamp;
-                document.getElementById(`${idPrefix}-ir`).innerText = nodeData.ir_distance;
+                document.getElementById(`${idPrefix}-ir1`).innerText = nodeData.ir_distance_1;
+                document.getElementById(`${idPrefix}-ir2`).innerText = nodeData.ir_distance_2;
                 document.getElementById(`${idPrefix}-w1`).innerText = nodeData.w1_actual;
                 document.getElementById(`${idPrefix}-w2`).innerText = nodeData.w2_actual;
                 document.getElementById(`${idPrefix}-servo`).innerText = nodeData.servo_angle;
+
+                // IMU Numerical Displays
+                document.getElementById(`${idPrefix}-qx`).innerText = (nodeData.qx || 0).toFixed(2);
+                document.getElementById(`${idPrefix}-qy`).innerText = (nodeData.qy || 0).toFixed(2);
+                document.getElementById(`${idPrefix}-qz`).innerText = (nodeData.qz || 0).toFixed(2);
+                document.getElementById(`${idPrefix}-qw`).innerText = (nodeData.qw || 1).toFixed(2);
+
+                document.getElementById(`${idPrefix}-gx`).innerText = (nodeData.gx || 0).toFixed(1);
+                document.getElementById(`${idPrefix}-gy`).innerText = (nodeData.gy || 0).toFixed(1);
+                document.getElementById(`${idPrefix}-gz`).innerText = (nodeData.gz || 0).toFixed(1);
+
+                document.getElementById(`${idPrefix}-ax`).innerText = (nodeData.ax || 0).toFixed(1);
+                document.getElementById(`${idPrefix}-ay`).innerText = (nodeData.ay || 0).toFixed(1);
+                document.getElementById(`${idPrefix}-az`).innerText = (nodeData.az || 0).toFixed(1);
+
+                // --- 3D ROTATION UPDATE (ROS FRAME) ---
+                if (cubes[nodeKey]) {
+                    const rawQ = new THREE.Quaternion(
+                        nodeData.qx || 0,
+                        nodeData.qy || 0,
+                        nodeData.qz || 0,
+                        nodeData.qw || 1
+                    );
+
+                    cubes[nodeKey].userData.lastRawQuaternion = rawQ.clone();
+
+                    const tareQ = tareQuaternions[nodeKey].clone().invert();
+                    const relativeQ = tareQ.multiply(rawQ);
+
+                    cubes[nodeKey].quaternion.copy(relativeQ.normalize());
+                }
+
             } else {
-                // UI changes for DISCONNECTED state
                 statusEl.innerText = "DISCONNECTED";
                 statusEl.className = "px-2 py-1 rounded text-xs font-bold bg-red-900 text-red-300";
                 
                 btnEl.innerText = "Connect";
                 btnEl.className = "px-4 py-1 bg-blue-600 hover:bg-blue-500 font-semibold rounded text-white text-sm transition-colors";
                 
-                // Unlock the dropdown
                 selectEl.disabled = false;
                 selectEl.classList.remove("opacity-50", "cursor-not-allowed");
             }

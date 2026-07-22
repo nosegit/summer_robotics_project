@@ -20,6 +20,8 @@ def main():
     time.sleep(1.0)
     
     print("\nListening for incoming telemetry packets... Press Ctrl+C to stop.\n")
+
+    node.send_command(w1_target=.0, w2_target=.0, servo_target=90.0)  # Example command to set initial positions
     
     try:
         while True:
