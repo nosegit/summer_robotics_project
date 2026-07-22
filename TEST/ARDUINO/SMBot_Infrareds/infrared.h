@@ -10,15 +10,19 @@ class INFRARED{
   private:
     mbed::I2C*  _I2C;
     float       _DISTANCE;
+    uint8_t     _I2C_BUS;
 
   public:
 
-    INFRARED(mbed::I2C* I2C): _I2C(I2C) {}
+    INFRARED(mbed::I2C* I2C): _I2C(I2C) {
+      _I2C_BUS = 0x01;
+    }
 
     float Get_distance(){ return _DISTANCE; }
-    void Begin(){
+    void set_I2C_BUS(uint8_t I2C_BUS){ _I2C_BUS = 0x01 << (I2C_BUS%4); }
 
-      const char mux_cmd = 0x01;
+    void Begin(){
+      const char mux_cmd = _I2C_BUS;
       const char mux_addr = 0xEE;
       _I2C->write(mux_addr, &mux_cmd, 1);
 
