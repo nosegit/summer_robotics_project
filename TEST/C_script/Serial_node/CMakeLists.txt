@@ -1,32 +1,34 @@
-cmake_minimum_required(VERSION 3.14)
-project(ArduinoNodeTest CXX)
+cmake_minimum_required(VERSION 3.20)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+project(TestArduino)
 
-# Find pthread
+set(CMAKE_CXX_STANDARD 20)
+
+# 1. Load the PkgConfig module
+find_package(PkgConfig REQUIRED)
+# 2. Ask PkgConfig to find libserial and create a CMake target for it
+pkg_check_modules(LibSerial REQUIRED IMPORTED_TARGET libserial)
+
 find_package(Threads REQUIRED)
 
-# Include the lib/ directory for headers
-include_directories(lib)
-
-# Compile library sources
-add_library(arduino_node_lib
-    lib/arduino_node.cpp
+add_library(ArduinoNode
+    lib/arduino_node/arduino_node.cpp
 )
 
-# Link LibSerial and Threads to library
-target_link_libraries(arduino_node_lib
-    PUBLIC
-    serial
+target_include_directories(ArduinoNode PUBLIC
+    lib/arduino_node
+)
+
+# 3. Link against the PkgConfig target
+target_link_libraries(ArduinoNode PUBLIC
+    PkgConfig::LibSerial
     Threads::Threads
 )
 
-# Executable target
-add_executable(test_node test.cpp)
+add_executable(TestArduino
+    src/test.cpp
+)
 
-# Link library to executable
-target_link_libraries(test_node
-    PRIVATE
-    arduino_node_lib
+target_link_libraries(TestArduino PRIVATE
+    ArduinoNode
 )
