@@ -9,17 +9,23 @@
 #include <cstdint>
 #include <cstring>
 #include <algorithm>
+#include <vector>
 #include <libserial/SerialPort.h>
 
 // --- FIXED CONFIGURATIONS ---
-constexpr size_t TELEMETRY_PAYLOAD_SIZE = 33;
-constexpr size_t TELEMETRY_PACKET_SIZE = 35;
+// Updated to match the new 43-byte packet (41 bytes of payload)
+constexpr size_t TELEMETRY_PAYLOAD_SIZE = 41; 
+constexpr size_t TELEMETRY_PACKET_SIZE = 43;  
 constexpr uint8_t TELEMETRY_HEADER = 0xA5;
 constexpr uint8_t COMMAND_HEADER = 0x5A;
 
-// Data structure mirroring the Python dataclass
+// Data structure mirroring the C++ state
 struct ArduinoData {
     uint32_t timestamp = 0;
+    
+    float theta1_actual = 0.0f; // NEW: Wheel 1 Position (rad)
+    float theta2_actual = 0.0f; // NEW: Wheel 2 Position (rad)
+    
     float w1_actual = 0.0f;
     float w2_actual = 0.0f;
     uint16_t ir_distance_1 = 0;
@@ -41,10 +47,12 @@ struct ArduinoData {
     bool connected = false;
 };
 
-// Packed struct for incoming telemetry mapping '<IhhHHBhhhhhhhhhh'
+// Packed struct for incoming telemetry
 #pragma pack(push, 1)
 struct TelemetryPayload {
     uint32_t timestamp;
+    int32_t theta1_act;   // NEW: Motor 1 Position
+    int32_t theta2_act;   // NEW: Motor 2 Position
     int16_t w1_actual;
     int16_t w2_actual;
     uint16_t ir_distance_1;
@@ -75,7 +83,7 @@ public:
     ArduinoNode(const std::string& port, int baudrate = 115200, const std::string& name = "Arduino");
     ~ArduinoNode();
 
-    void start();
+    bool start();
     void stop();
     void sendCommand(float w1_target, float w2_target, float servo_target);
     ArduinoData getData();

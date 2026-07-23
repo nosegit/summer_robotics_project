@@ -5,15 +5,17 @@ import time
 from dataclasses import dataclass
 
 # --- FIXED CONFIGURATIONS ---
-# Struct format: 1 uint32 (I), 2 int16 (h), 2 uint16 (H), 1 uint8 (B), 10 int16 (h)
-TELEMETRY_FMT = '<IhhHHBhhhhhhhhhh'   
-TELEMETRY_PAYLOAD_SIZE = 33 
-TELEMETRY_PACKET_SIZE = 35  
+# Struct format: 1 uint32 (I), 2 int32 (i), 2 int16 (h), 2 uint16 (H), 1 uint8 (B), 10 int16 (h)
+TELEMETRY_FMT = '<IiihhHHBhhhhhhhhhh'   
+TELEMETRY_PAYLOAD_SIZE = 41 
+TELEMETRY_PACKET_SIZE = 43  
 COMMAND_FMT = '<hhB'       
 
 @dataclass
 class ArduinoData:
     timestamp: int = 0
+    theta1_actual: float = 0.0
+    theta2_actual: float = 0.0
     w1_actual: float = 0.0
     w2_actual: float = 0.0
     ir_distance_1: int = 0
@@ -90,7 +92,9 @@ class ArduinoNode:
             
             # Return a fresh copy of the expanded dataclass
             return ArduinoData(
-                self.data.timestamp, self.data.w1_actual, self.data.w2_actual,
+                self.data.timestamp, 
+                self.data.theta1_actual, self.data.theta2_actual,
+                self.data.w1_actual, self.data.w2_actual,
                 self.data.ir_distance_1, self.data.ir_distance_2, self.data.servo_angle,
                 self.data.qx, self.data.qy, self.data.qz, self.data.qw,
                 self.data.gx, self.data.gy, self.data.gz,
@@ -118,25 +122,28 @@ class ArduinoNode:
                         with self.lock:
                             # Base data
                             self.data.timestamp = unpacked[0]
-                            self.data.w1_actual = unpacked[1] / 1000.0
-                            self.data.w2_actual = unpacked[2] / 1000.0
-                            self.data.ir_distance_1 = unpacked[3]
-                            self.data.ir_distance_2 = unpacked[4]
-                            self.data.servo_angle = float(unpacked[5])
+                            self.data.theta1_actual = unpacked[1] / 1000.0
+                            self.data.theta2_actual = unpacked[2] / 1000.0
+                            self.data.w1_actual = unpacked[3] / 1000.0
+                            self.data.w2_actual = unpacked[4] / 1000.0
+                            
+                            self.data.ir_distance_1 = unpacked[5]
+                            self.data.ir_distance_2 = unpacked[6]
+                            self.data.servo_angle = float(unpacked[7])
                             
                             # IMU Quaternions (scaled by 10000)
-                            self.data.qx = unpacked[6] / 10000.0
-                            self.data.qy = unpacked[7] / 10000.0
-                            self.data.qz = unpacked[8] / 10000.0
-                            self.data.qw = unpacked[9] / 10000.0
+                            self.data.qx = unpacked[8] / 10000.0
+                            self.data.qy = unpacked[9] / 10000.0
+                            self.data.qz = unpacked[10] / 10000.0
+                            self.data.qw = unpacked[11] / 10000.0
                             
                             # IMU Gyro & Accel (scaled by 1000)
-                            self.data.gx = unpacked[10] / 1000.0
-                            self.data.gy = unpacked[11] / 1000.0
-                            self.data.gz = unpacked[12] / 1000.0
-                            self.data.ax = unpacked[13] / 1000.0
-                            self.data.ay = unpacked[14] / 1000.0
-                            self.data.az = unpacked[15] / 1000.0
+                            self.data.gx = unpacked[12] / 1000.0
+                            self.data.gy = unpacked[13] / 1000.0
+                            self.data.gz = unpacked[14] / 1000.0
+                            self.data.ax = unpacked[15] / 1000.0
+                            self.data.ay = unpacked[16] / 1000.0
+                            self.data.az = unpacked[17] / 1000.0
 
                             self.last_packet_time = time.time()
                 else:

@@ -15,9 +15,9 @@ int main() {
     // Give it a brief moment to connect
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < 20; ++i) {
         // Send motor/servo target command
-        node.sendCommand(1.5f, -1.5f, 90.0f);
+        node.sendCommand(0.5f, 0.5f, 90.0f);
 
         // Retrieve current telemetry state
         ArduinoData data = node.getData();
@@ -25,6 +25,7 @@ int main() {
         std::cout << "\n--- Telemetry Read #" << (i + 1) << " ---" << std::endl;
         std::cout << "Connected: " << (data.connected ? "YES" : "NO") << std::endl;
         std::cout << "Timestamp: " << data.timestamp << " ms" << std::endl;
+        std::cout << "Theta1 Actual: " << data.theta1_actual << " rad | Theta2 Actual: " << data.theta2_actual << " rad" << std::endl;
         std::cout << "W1 Actual: " << data.w1_actual << " rad/s | W2 Actual: " << data.w2_actual << " rad/s" << std::endl;
         std::cout << "IR 1: " << data.ir_distance_1 << " mm | IR 2: " << data.ir_distance_2 << " mm" << std::endl;
         std::cout << "Servo Angle: " << data.servo_angle << " deg" << std::endl;
@@ -35,6 +36,10 @@ int main() {
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 
+    std::cout << "\nSending final command to stop motors and center servo..." << std::endl;
+    node.sendCommand(0.0f, 0.0f, 90.0f);
+    node.sendCommand(0.0f, 0.0f, 90.0f);
+    node.sendCommand(0.0f, 0.0f, 90.0f);
     std::cout << "\nStopping Arduino Node..." << std::endl;
     node.stop();
 

@@ -298,3 +298,88 @@ sudo usermod -aG dialout $USER
 * **Overrun Warnings in Controller Manager:**
 Ensure blocking operations like `serial_.DrainWriteBuffer()` are removed from `arduino_node.cpp` to prevent USB latency from delaying the control loop.
 """
+
+
+## Testing Guide (update position tracking from arduino)
+
+
+### 🚀 1. Launch the System
+
+Plug in your Arduino via USB and launch the entire hardware stack. This will load the URDF, start the controller manager, and spawn all hardware broadcasters and controllers.
+
+```bash
+ros2 launch arduino_hardware_interface test_hardware.launch.py
+
+```
+
+> **Note:** If the Arduino is not plugged in or the port is unavailable, the launch will safely abort and print an error message.
+
+---
+
+### 📊 2. Read Telemetry (Sensors & Feedback)
+
+Open a **new terminal**, run `source install/setup.bash`, and use the following commands to monitor live data coming from the Arduino.
+
+**View Wheel Encoders and Servo Position:**
+
+```bash
+ros2 topic echo /joint_states
+
+```
+
+**View IMU Data:**
+
+```bash
+ros2 topic echo /imu_sensor_broadcaster/imu
+
+```
+
+**View IR Sensor Distances:**
+
+```bash
+ros2 topic echo /ir_sensor_1_broadcaster/range
+ros2 topic echo /ir_sensor_2_broadcaster/range
+
+```
+
+---
+
+### 🎮 3. Send Commands (Actuators)
+
+Open a **new terminal**, run `source install/setup.bash`, and use the following commands to move the robot.
+
+#### Set Motor Speed (Wheels)
+
+The wheels use a velocity controller. The command below publishes a continuous target speed of `1.5 rad/s` to both wheels:
+
+```bash
+ros2 topic pub /wheel_velocity_controller/commands std_msgs/msg/Float64MultiArray "{data: [1.5, 1.5]}"
+
+```
+
+*Press `Ctrl+C` to stop sending the command.*
+
+To stop the motors, send a speed of `0.0`:
+
+```bash
+ros2 topic pub --once /wheel_velocity_controller/commands std_msgs/msg/Float64MultiArray "{data: [0.0, 0.0]}"
+
+```
+
+#### Set Servo Position
+
+The servo uses a position controller. Use the `--once` flag to send a single absolute target angle (in degrees).
+
+Move servo to **90 degrees**:
+
+```bash
+ros2 topic pub --once /servo_position_controller/commands std_msgs/msg/Float64MultiArray "{data: [90.0]}"
+
+```
+
+Move servo back to **0 degrees**:
+
+```bash
+ros2 topic pub --once /servo_position_controller/commands std_msgs/msg/Float64MultiArray "{data: [0.0]}"
+
+```

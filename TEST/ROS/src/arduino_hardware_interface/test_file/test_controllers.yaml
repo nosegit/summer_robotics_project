@@ -14,6 +14,12 @@ controller_manager:
     ir_sensor_2_broadcaster:
       type: range_sensor_broadcaster/RangeSensorBroadcaster
 
+    wheel_velocity_controller:
+      type: velocity_controllers/JointGroupVelocityController
+    
+    servo_position_controller:
+      type: position_controllers/JointGroupPositionController
+
 imu_sensor_broadcaster:
   ros__parameters:
     sensor_name: "imu_sensor"
@@ -30,3 +36,15 @@ ir_sensor_2_broadcaster:
     sensor_name: "ir_sensor_2"
     frame_id: "ir_sensor_2"
     radiation_type: 1 # 1 = Infrared
+
+# Configure which joints the controllers talk to
+wheel_velocity_controller:
+  ros__parameters:
+    joints:
+      - wheel1_joint
+      - wheel2_joint
+
+servo_position_controller:
+  ros__parameters:
+    joints:
+      - servo1_joint  # Use the exact name from your URDF

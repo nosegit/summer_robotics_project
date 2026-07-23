@@ -90,7 +90,10 @@ hardware_interface::CallbackReturn ArduinoHardwareInterface::on_configure(
   RCLCPP_INFO(rclcpp::get_logger("ArduinoHardwareInterface"), "Opening serial connection on %s...", port_.c_str());
   
   arduino_node_ = std::make_unique<ArduinoNode>(port_, baudrate_, info_.name);
-  arduino_node_->start();
+  if(!arduino_node_->start()){
+    RCLCPP_ERROR(rclcpp::get_logger("ArduinoHardwareInterface"), "Failed to start ArduinoNode. Check serial connection.");
+    return hardware_interface::CallbackReturn::ERROR;
+  }
 
   return hardware_interface::CallbackReturn::SUCCESS;
 }
@@ -107,21 +110,21 @@ hardware_interface::CallbackReturn ArduinoHardwareInterface::on_cleanup(
 }
 
 hardware_interface::return_type ArduinoHardwareInterface::read(
-  const rclcpp::Time & /*time*/, const rclcpp::Duration & period)
+  const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
   if (!arduino_node_) return hardware_interface::return_type::ERROR;
 
   // Retrieve data from background serial thread
   ArduinoData data = arduino_node_->getData();
 
-  // Velocities (rad/s)
+  // Assign Absolute Positions Directly
+  hw_state_w1_pos_ = data.theta1_actual;
+  hw_state_w2_pos_ = data.theta2_actual;
+
+  // Assign Velocities (rad/s)
   hw_state_w1_vel_ = data.w1_actual;
   hw_state_w2_vel_ = data.w2_actual;
   
-  // Position integration (rad = rad/s * dt)
-  hw_state_w1_pos_ += hw_state_w1_vel_ * period.seconds();
-  hw_state_w2_pos_ += hw_state_w2_vel_ * period.seconds();
-
   hw_state_servo_pos_ = data.servo_angle;
   hw_state_ir1_ = static_cast<double>(data.ir_distance_1);
   hw_state_ir2_ = static_cast<double>(data.ir_distance_2);

@@ -8,11 +8,13 @@
 // --- NEW DISTRIBUTED PROTOCOL DEFINITIONS ---
 
 // 1. OUTGOING: Telemetry (Arduino -> Raspberry Pi)
-// Size: 35 Bytes (1 Sync + 4 Time + 4 Motor + 4 IR + 1 Servo + 20 IMU + 1 CS)
+// Size: 43 Bytes (1 Sync + 4 Time + 12 Motor + 4 IR + 1 Servo + 20 IMU + 1 CS)
 struct __attribute__((packed)) ArduinoTelemetryPacket {
     uint8_t startByte = 0xA5;    // Sync Header
     uint32_t timestamp;          // 4 bytes (millis)
     
+    int32_t theta1_act;          // 4 bytes (Actual Motor 1 Posotion: rad * 1000)
+    int32_t theta2_act;          // 4 bytes (Actual Motor 2 Posotion: rad * 1000)
     int16_t w1_act;              // 2 bytes (Actual Motor 1 Speed: rad/s * 1000)
     int16_t w2_act;              // 2 bytes (Actual Motor 2 Speed: rad/s * 1000)
     
@@ -131,6 +133,8 @@ private:
         pkt.timestamp = millis();
         
         // Pack Standard Data
+        pkt.theta1_act = (int32_t)(data.actual_wheel_theta1 * 1000.0f);
+        pkt.theta2_act = (int32_t)(data.actual_wheel_theta2 * 1000.0f);
         pkt.w1_act = (int16_t)(data.actual_w1 * 1000.0f);
         pkt.w2_act = (int16_t)(data.actual_w2 * 1000.0f);
         pkt.ir_dist_1 = (uint16_t)data.ir_distance_1;

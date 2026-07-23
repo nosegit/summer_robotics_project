@@ -8,10 +8,12 @@ struct LocalState {
     // Motor 1
     float target_w1 = 0.0;
     float actual_w1 = 0.0;
+    float actual_wheel_theta1 = 0.0;
 
     // Motor 2
     float target_w2 = 0.0;
     float actual_w2 = 0.0;
+    float actual_wheel_theta2 = 0.0;
 
     // Scanning Sensors
     float ir_distance_1 = 0.0;
@@ -40,6 +42,14 @@ public:
         _lock.lock();
         _data.actual_w1 = a1;
         _data.actual_w2 = a2;
+        _lock.unlock();
+    }
+
+    // Update wheel position
+    void setActualWheelPosition(float theta1, float theta2){
+        _lock.lock();
+        _data.actual_wheel_theta1 = theta1;
+        _data.actual_wheel_theta2 = theta2;
         _lock.unlock();
     }
 

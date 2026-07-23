@@ -4,7 +4,7 @@
   <link name="base_link"/>
   <link name="wheel1_link"/>
   <link name="wheel2_link"/>
-  <link name="servo_link"/>
+  <link name="servo1_link"/>
 
   <!-- Physical URDF Joints -->
   <joint name="wheel1_joint" type="continuous">
@@ -19,9 +19,9 @@
     <axis xyz="0 1 0"/>
   </joint>
 
-  <joint name="servo_joint" type="revolute">
+  <joint name="servo1_joint" type="revolute">
     <parent link="base_link"/>
-    <child link="servo_link"/>
+    <child link="servo1_link"/>
     <axis xyz="0 0 1"/>
     <limit lower="-3.14" upper="3.14" effort="10" velocity="10"/>
   </joint>
@@ -48,7 +48,7 @@
     </joint>
 
     <!-- Servo -->
-    <joint name="servo_joint">
+    <joint name="servo1_joint">
       <command_interface name="position"/>
       <state_interface name="position"/>
     </joint>

@@ -49,6 +49,8 @@ void setup() {
   _communication.begin(&_arduino_state, &_mySerial);
 
   _motor.Begin(&_arduino_state);
+  // _motor.Set_dir(0,0);
+  // _motor.Set_dir(1,0);
 
   _servo.begin();
 

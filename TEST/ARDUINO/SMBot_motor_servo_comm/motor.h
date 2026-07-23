@@ -17,6 +17,7 @@ class MOTOR{
   const float   _PID_INTERVAL_SEC = 0.05; // 20hz
   mbed::Ticker  _PID_TICKER;
   rtos::Thread  _THREAD_PID;
+  rtos::Thread  _THREAD_STATE_UPDATE;
 
   private:
   /* MOTOR A */
@@ -48,6 +49,7 @@ class MOTOR{
 
   void _Pid_isr();
   void _Pid_loop();
+  void _Update_state_loop();
 
   void _Cal_speed();
   void EncoderA_trigger();

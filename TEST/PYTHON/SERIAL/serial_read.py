@@ -4,7 +4,7 @@ from arduino_node import ArduinoNode
 # --- CONFIGURATION ---
 # Change this to match your actual port
 # SERIAL_PORT = '/dev/ttyACM0' 
-SERIAL_PORT = 'COM7' 
+SERIAL_PORT = 'COM5' 
 BAUDRATE = 115200
 
 def main():
@@ -21,7 +21,7 @@ def main():
     
     print("\nListening for incoming telemetry packets... Press Ctrl+C to stop.\n")
 
-    node.send_command(w1_target=.0, w2_target=.0, servo_target=90.0)  # Example command to set initial positions
+    node.send_command(w1_target=0.5, w2_target=0.5, servo_target=90.0)  # Example command to set initial positions
     
     try:
         while True:
@@ -33,7 +33,9 @@ def main():
                 print("\033[H\033[J", end="")  # ANSI escape to clear screen and move cursor home
                 
                 print(f"=== TELEMETRY SNAPSHOT | Time: {data.timestamp} ms ===")
-                print(f"MOTORS: W1: {data.w1_actual:+.3f} rad/s  | W2: {data.w2_actual:+.3f} rad/s")
+                print(f"POSITIONS: P1: {data.theta1_actual:+.3f} rad   | P2: {data.theta2_actual:+.3f} rad")
+                print(f"VELOCITY:  W1: {data.w1_actual:+.3f} rad/s | W2: {data.w2_actual:+.3f} rad/s")
+                print("-" * 50)
                 print(f"SENSOR: IR1: {data.ir_distance_1} mm | IR2: {data.ir_distance_2} mm | Servo: {data.servo_angle:.1f}°")
                 print("-" * 50)
                 print(f"IMU QUAT:  Qx: {data.qx:+.4f} | Qy: {data.qy:+.4f} | Qz: {data.qz:+.4f} | Qw: {data.qw:+.4f}")
@@ -49,8 +51,10 @@ def main():
             
     except KeyboardInterrupt:
         print("\n\nStopping telemetry reader...")
+
     finally:
         # Crucial: Always stop the thread and release the hardware serial port
+        node.send_command(w1_target=0.0, w2_target=0.0, servo_target=90.0)  # Example command to set initial positions
         node.stop()
         print("Serial port successfully closed.")
 
