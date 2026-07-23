@@ -16,6 +16,7 @@ x-server-base: &server-base
     - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
   volumes:
     - ./src:/root/ros2_ws/src:rw
+    - /dev:/dev
 
 x-gui-base: &gui-base
   build: 

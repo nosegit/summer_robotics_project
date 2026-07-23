@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     ros-jazzy-xacro \
     ros-jazzy-nav2-minimal-tb* \
     ros-jazzy-joint-state-publisher \
+    libserial-dev \
     nano \
     && rm -rf /var/lib/apt/lists/*
 
