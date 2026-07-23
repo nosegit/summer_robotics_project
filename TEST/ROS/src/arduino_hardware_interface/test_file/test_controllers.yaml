@@ -1,0 +1,32 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 50
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    imu_sensor_broadcaster:
+      type: imu_sensor_broadcaster/IMUSensorBroadcaster
+
+    ir_sensor_1_broadcaster:
+      type: range_sensor_broadcaster/RangeSensorBroadcaster
+
+    ir_sensor_2_broadcaster:
+      type: range_sensor_broadcaster/RangeSensorBroadcaster
+
+imu_sensor_broadcaster:
+  ros__parameters:
+    sensor_name: "imu_sensor"
+    frame_id: "imu_sensor"
+
+ir_sensor_1_broadcaster:
+  ros__parameters:
+    sensor_name: "ir_sensor_1"
+    frame_id: "ir_sensor_1"
+    radiation_type: 1 # 1 = Infrared
+
+ir_sensor_2_broadcaster:
+  ros__parameters:
+    sensor_name: "ir_sensor_2"
+    frame_id: "ir_sensor_2"
+    radiation_type: 1 # 1 = Infrared

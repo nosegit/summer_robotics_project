@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<robot name="test_arduino_robot">
+  <!-- Dummy Links -->
+  <link name="base_link"/>
+  <link name="wheel1_link"/>
+  <link name="wheel2_link"/>
+  <link name="servo_link"/>
+
+  <!-- Physical URDF Joints -->
+  <joint name="wheel1_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="wheel1_link"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <joint name="wheel2_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="wheel2_link"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <joint name="servo_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="servo_link"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.14" upper="3.14" effort="10" velocity="10"/>
+  </joint>
+
+  <!-- ros2_control Hardware Mapping -->
+  <ros2_control name="ArduinoHardware" type="system">
+    <hardware>
+      <plugin>arduino_hardware_interface/ArduinoHardwareInterface</plugin>
+      <param name="serial_port">/dev/ttyACM0</param>
+      <param name="baudrate">115200</param>
+    </hardware>
+
+    <!-- Wheels -->
+    <joint name="wheel1_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <joint name="wheel2_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+
+    <!-- Servo -->
+    <joint name="servo_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+    </joint>
+
+    <!-- Sensors -->
+    <sensor name="imu_sensor">
+      <state_interface name="orientation.x"/>
+      <state_interface name="orientation.y"/>
+      <state_interface name="orientation.z"/>
+      <state_interface name="orientation.w"/>
+      <state_interface name="angular_velocity.x"/>
+      <state_interface name="angular_velocity.y"/>
+      <state_interface name="angular_velocity.z"/>
+      <state_interface name="linear_acceleration.x"/>
+      <state_interface name="linear_acceleration.y"/>
+      <state_interface name="linear_acceleration.z"/>
+    </sensor>
+
+    <sensor name="ir_sensor_1">
+      <state_interface name="range"/>
+    </sensor>
+
+    <sensor name="ir_sensor_2">
+      <state_interface name="range"/>
+    </sensor>
+  </ros2_control>
+</robot>
