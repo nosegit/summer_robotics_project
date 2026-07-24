@@ -31,39 +31,61 @@ std::vector<hardware_interface::StateInterface> ArduinoHardwareInterface::export
 {
   std::vector<hardware_interface::StateInterface> state_interfaces;
 
-  // Joint 0: Wheel 1
-  state_interfaces.emplace_back(hardware_interface::StateInterface(
-    info_.joints[0].name, hardware_interface::HW_IF_POSITION, &hw_state_w1_pos_));
-  state_interfaces.emplace_back(hardware_interface::StateInterface(
-    info_.joints[0].name, hardware_interface::HW_IF_VELOCITY, &hw_state_w1_vel_));
+  // ==========================================
+  // 1. JOINTS (Wheels & Servo)
+  // ==========================================
+  if (info_.joints.size() > 0) {
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
+      info_.joints[0].name, hardware_interface::HW_IF_POSITION, &hw_state_w1_pos_));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
+      info_.joints[0].name, hardware_interface::HW_IF_VELOCITY, &hw_state_w1_vel_));
+  }
   
-  // Joint 1: Wheel 2
-  state_interfaces.emplace_back(hardware_interface::StateInterface(
-    info_.joints[1].name, hardware_interface::HW_IF_POSITION, &hw_state_w2_pos_));
-  state_interfaces.emplace_back(hardware_interface::StateInterface(
-    info_.joints[1].name, hardware_interface::HW_IF_VELOCITY, &hw_state_w2_vel_));
+  if (info_.joints.size() > 1) {
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
+      info_.joints[1].name, hardware_interface::HW_IF_POSITION, &hw_state_w2_pos_));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
+      info_.joints[1].name, hardware_interface::HW_IF_VELOCITY, &hw_state_w2_vel_));
+  }
 
-  // Joint 2: Servo
-  state_interfaces.emplace_back(hardware_interface::StateInterface(
-    info_.joints[2].name, hardware_interface::HW_IF_POSITION, &hw_state_servo_pos_));
+  if (info_.joints.size() > 2) {
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
+      info_.joints[2].name, hardware_interface::HW_IF_POSITION, &hw_state_servo_pos_));
+  }
 
-  // IMU State Interfaces
-  state_interfaces.emplace_back(hardware_interface::StateInterface("imu_sensor", "orientation.x", &hw_state_qx_));
-  state_interfaces.emplace_back(hardware_interface::StateInterface("imu_sensor", "orientation.y", &hw_state_qy_));
-  state_interfaces.emplace_back(hardware_interface::StateInterface("imu_sensor", "orientation.z", &hw_state_qz_));
-  state_interfaces.emplace_back(hardware_interface::StateInterface("imu_sensor", "orientation.w", &hw_state_qw_));
+  // ==========================================
+  // 2. SENSORS (IMU & IR)
+  // ==========================================
   
-  state_interfaces.emplace_back(hardware_interface::StateInterface("imu_sensor", "angular_velocity.x", &hw_state_gx_));
-  state_interfaces.emplace_back(hardware_interface::StateInterface("imu_sensor", "angular_velocity.y", &hw_state_gy_));
-  state_interfaces.emplace_back(hardware_interface::StateInterface("imu_sensor", "angular_velocity.z", &hw_state_gz_));
-  
-  state_interfaces.emplace_back(hardware_interface::StateInterface("imu_sensor", "linear_acceleration.x", &hw_state_ax_));
-  state_interfaces.emplace_back(hardware_interface::StateInterface("imu_sensor", "linear_acceleration.y", &hw_state_ay_));
-  state_interfaces.emplace_back(hardware_interface::StateInterface("imu_sensor", "linear_acceleration.z", &hw_state_az_));
+  // Sensor 0: IMU (Assuming IMU is the first sensor defined in this Arduino's URDF)
+  if (info_.sensors.size() > 0) {
+    std::string imu_name = info_.sensors[0].name;
+    
+    state_interfaces.emplace_back(hardware_interface::StateInterface(imu_name, "orientation.x", &hw_state_qx_));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(imu_name, "orientation.y", &hw_state_qy_));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(imu_name, "orientation.z", &hw_state_qz_));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(imu_name, "orientation.w", &hw_state_qw_));
+    
+    state_interfaces.emplace_back(hardware_interface::StateInterface(imu_name, "angular_velocity.x", &hw_state_gx_));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(imu_name, "angular_velocity.y", &hw_state_gy_));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(imu_name, "angular_velocity.z", &hw_state_gz_));
+    
+    state_interfaces.emplace_back(hardware_interface::StateInterface(imu_name, "linear_acceleration.x", &hw_state_ax_));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(imu_name, "linear_acceleration.y", &hw_state_ay_));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(imu_name, "linear_acceleration.z", &hw_state_az_));
+  }
 
-  // IR Distance Sensors
-  state_interfaces.emplace_back(hardware_interface::StateInterface("ir_sensor_1", "range", &hw_state_ir1_));
-  state_interfaces.emplace_back(hardware_interface::StateInterface("ir_sensor_2", "range", &hw_state_ir2_));
+  // Sensor 1: IR Sensor 1 (Assuming it's the second sensor in the URDF)
+  if (info_.sensors.size() > 1) {
+    std::string ir1_name = info_.sensors[1].name;
+    state_interfaces.emplace_back(hardware_interface::StateInterface(ir1_name, "range", &hw_state_ir1_));
+  }
+
+  // Sensor 2: IR Sensor 2 (Assuming it's the third sensor in the URDF)
+  if (info_.sensors.size() > 2) {
+    std::string ir2_name = info_.sensors[2].name;
+    state_interfaces.emplace_back(hardware_interface::StateInterface(ir2_name, "range", &hw_state_ir2_));
+  }
 
   return state_interfaces;
 }

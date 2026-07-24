@@ -383,3 +383,35 @@ Move servo back to **0 degrees**:
 ros2 topic pub --once /servo_position_controller/commands std_msgs/msg/Float64MultiArray "{data: [0.0]}"
 
 ```
+
+## Quick Test (mecanum robot)
+
+### 1. Launch Hardware & Controllers
+
+```bash
+ros2 launch arduino_hardware_interface test_hardware_mw.launch.py
+
+```
+
+### 2. Run Teleop Keyboard
+
+```bash
+ros2 run teleop_twist_keyboard teleop_twist_keyboard
+
+```
+
+### 3. Verify Topics & Controller State
+
+```bash
+ros2 topic echo /mecanum_drive_controller/controller_state
+
+```
+
+### 4. Visualize in RViz2
+
+```bash
+rviz2
+
+```
+
+*Set **Fixed Frame** to `odom` or `base_link`, then add **RobotModel** and **TF** plugins.*
