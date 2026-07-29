@@ -13,7 +13,7 @@ hardware_interface::CallbackReturn ArduinoHardwareInterface::on_init(
     return hardware_interface::CallbackReturn::ERROR;
   }
 
-  // Parse USB parameters from URDF
+  // Parse USB parameters from URDF (<hardware> section)
   if (info_.hardware_parameters.find("serial_port") != info_.hardware_parameters.end()) {
     port_ = info_.hardware_parameters.at("serial_port");
   } else {
@@ -23,6 +23,37 @@ hardware_interface::CallbackReturn ArduinoHardwareInterface::on_init(
   if (info_.hardware_parameters.find("baudrate") != info_.hardware_parameters.end()) {
     baudrate_ = std::stoi(info_.hardware_parameters.at("baudrate"));
   }
+
+  // =========================================================
+  // READ direction_multiplier FROM JOINT 0 (w1)
+  // =========================================================
+  if (info_.joints.size() > 0 && 
+      info_.joints[0].parameters.find("direction_multiplier") != info_.joints[0].parameters.end()) 
+  {
+    w1_multiplier_ = std::stof(info_.joints[0].parameters.at("direction_multiplier"));
+  } else {
+    w1_multiplier_ = 1.0f;
+  }
+
+  // =========================================================
+  // READ direction_multiplier FROM JOINT 1 (w2)
+  // =========================================================
+  if (info_.joints.size() > 1 && 
+      info_.joints[1].parameters.find("direction_multiplier") != info_.joints[1].parameters.end()) 
+  {
+    w2_multiplier_ = std::stof(info_.joints[1].parameters.at("direction_multiplier"));
+  } else {
+    w2_multiplier_ = 1.0f;
+  }
+
+  RCLCPP_INFO(
+    rclcpp::get_logger("ArduinoHardwareInterface"), 
+    "Configured '%s' | Port: %s | w1_mult (%s): %.1f | w2_mult (%s): %.1f",
+    info_.name.c_str(), 
+    port_.c_str(), 
+    info_.joints[0].name.c_str(), w1_multiplier_,
+    info_.joints[1].name.c_str(), w2_multiplier_
+  );
 
   return hardware_interface::CallbackReturn::SUCCESS;
 }
@@ -139,13 +170,13 @@ hardware_interface::return_type ArduinoHardwareInterface::read(
   // Retrieve data from background serial thread
   ArduinoData data = arduino_node_->getData();
 
-  // Assign Absolute Positions Directly
-  hw_state_w1_pos_ = data.theta1_actual;
-  hw_state_w2_pos_ = data.theta2_actual;
+  // Assign Absolute Positions Directly (with Direction Multiplier)
+  hw_state_w1_pos_ = data.theta1_actual * w1_multiplier_;
+  hw_state_w2_pos_ = data.theta2_actual * w2_multiplier_;
 
-  // Assign Velocities (rad/s)
-  hw_state_w1_vel_ = data.w1_actual;
-  hw_state_w2_vel_ = data.w2_actual;
+  // Assign Velocities (rad/s) (with Direction Multiplier)
+  hw_state_w1_vel_ = data.w1_actual * w1_multiplier_;
+  hw_state_w2_vel_ = data.w2_actual * w2_multiplier_;
   
   hw_state_servo_pos_ = data.servo_angle;
   hw_state_ir1_ = static_cast<double>(data.ir_distance_1);
@@ -165,10 +196,10 @@ hardware_interface::return_type ArduinoHardwareInterface::write(
 {
   if (!arduino_node_) return hardware_interface::return_type::ERROR;
 
-  // Pass latest commands down to serial transmission buffer
+  // Apply Direction Multiplier to commands sent down to serial transmission buffer
   arduino_node_->sendCommand(
-    static_cast<float>(hw_cmd_w1_), 
-    static_cast<float>(hw_cmd_w2_), 
+    static_cast<float>(hw_cmd_w1_ * w1_multiplier_), 
+    static_cast<float>(hw_cmd_w2_ * w2_multiplier_), 
     static_cast<float>(hw_cmd_servo_)
   );
 

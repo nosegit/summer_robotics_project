@@ -46,6 +46,9 @@ private:
   std::string port_;
   int baudrate_ {115200};
 
+  double w1_multiplier_ {1.0};
+  double w2_multiplier_ {1.0};  
+
   // Command buffers (ROS 2 Control -> Hardware)
   double hw_cmd_w1_ {0.0};
   double hw_cmd_w2_ {0.0};
@@ -53,7 +56,7 @@ private:
 
   // State buffers (Hardware -> ROS 2 Control)
   double hw_state_w1_vel_ {0.0};
-  double hw_state_w1_pos_ {0.0};
+  double hw_state_w1_pos_ {0.0};  
   double hw_state_w2_vel_ {0.0};
   double hw_state_w2_pos_ {0.0};
   

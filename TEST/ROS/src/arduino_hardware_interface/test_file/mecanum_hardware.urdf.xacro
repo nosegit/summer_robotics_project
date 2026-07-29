@@ -80,7 +80,8 @@
         <origin xyz="0 0 ${chassis_pos_z}" rpy="0 0 0"/>
     </joint>
 
-    <xacro:macro name="mecanum_wheel" params="prefix x_reflect y_reflect">
+    <!-- Added z_axis_reflect parameter -->
+    <xacro:macro name="mecanum_wheel" params="prefix x_reflect y_reflect z_axis_reflect">
         <link name="${prefix}_wheel">
             <visual>
                 <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
@@ -102,23 +103,27 @@
             <parent link="base_link"/>
             <child link="${prefix}_wheel"/>
             <origin xyz="${x_reflect * wheel_pos_x} ${y_reflect * wheel_pos_y} ${wheel_pos_z}" rpy="0 0 0"/>
-            <axis xyz="0 1 0"/>
+            <!-- Flipped dynamically based on which side the wheel is on -->
+            <axis xyz="0 ${z_axis_reflect} 0"/>
         </joint>
         
         <gazebo reference="${prefix}_wheel">
             <surface>
                 <friction>
                     <ode>
-                        <mu>0.0</mu>   <mu2>0.0</mu2> </ode>
+                        <mu>0.0</mu>   <mu2>0.0</mu2>
+                    </ode>
                 </friction>
             </surface>
         </gazebo>
     </xacro:macro>
 
-    <xacro:mecanum_wheel prefix="front_left"  x_reflect="1"  y_reflect="1" />
-    <xacro:mecanum_wheel prefix="front_right" x_reflect="1"  y_reflect="-1" />
-    <xacro:mecanum_wheel prefix="rear_left"   x_reflect="-1" y_reflect="1" />
-    <xacro:mecanum_wheel prefix="rear_right"  x_reflect="-1" y_reflect="-1" />
+    <!-- Left wheels rotate normally along +Y axis -->
+    <xacro:mecanum_wheel prefix="front_left"  x_reflect="1"  y_reflect="1"  z_axis_reflect="1" />
+    <xacro:mecanum_wheel prefix="rear_left"   x_reflect="-1" y_reflect="1"  z_axis_reflect="1" />
+    <!-- Right wheels rotate inverted along -Y axis (180 degree flip) -->
+    <xacro:mecanum_wheel prefix="front_right" x_reflect="1"  y_reflect="-1" z_axis_reflect="-1" />
+    <xacro:mecanum_wheel prefix="rear_right"  x_reflect="-1" y_reflect="-1" z_axis_reflect="-1" />
 
     <!-- LIDAR -->
     <link name="laser_frame">
@@ -142,7 +147,7 @@
         <origin xyz="${chassis_length/4.0} 0 ${(chassis_height/2.0) + (lidar_height/2.0)}" rpy="0 0 0"/>
     </joint>
 
-    <!-- NEW: SENSOR LINKS FOR ROS2_CONTROL (Missing in old xacro) -->
+    <!-- SENSOR LINKS FOR ROS2_CONTROL -->
     <link name="imu_sensor_1"/>
     <joint name="imu_1_joint" type="fixed">
         <parent link="chassis"/>
@@ -171,6 +176,20 @@
         <origin xyz="0.2 -0.1 0" rpy="0 0 0"/>
     </joint>
 
+    <link name="ir_sensor_3"/>
+    <joint name="ir_3_joint" type="fixed">
+        <parent link="chassis"/>
+        <child link="ir_sensor_3"/>
+        <origin xyz="-0.2 0.1 0" rpy="0 0 0"/>
+    </joint>
+
+    <link name="ir_sensor_4"/>
+    <joint name="ir_4_joint" type="fixed">
+        <parent link="chassis"/>
+        <child link="ir_sensor_4"/>
+        <origin xyz="-0.2 -0.1 0" rpy="0 0 0"/>
+    </joint>
+
     <!-- SERVO 1 (Front) -->
     <link name="servo_1_link"/>
     <joint name="servo_1_joint" type="continuous">
@@ -190,14 +209,14 @@
     </joint>
 
     <!-- ============================================== -->
-    <!-- REAL HARDWARE (Arduino ros2_control)           -->
+    <!-- REAL HARDWARE (Arduino ros2_control: LEFT/RIGHT) -->
     <!-- ============================================== -->
     <xacro:unless value="$(arg use_sim)">
-        <!-- FRONT ARDUINO -->
-        <ros2_control name="ArduinoFront" type="system">
+        <!-- LEFT ARDUINO -->
+        <ros2_control name="ArduinoLeft" type="system">
             <hardware>
                 <plugin>arduino_hardware_interface/ArduinoHardwareInterface</plugin>
-                <param name="serial_port">/dev/ttyACM0</param>
+                <param name="serial_port">/dev/ttyUSB0</param>
                 <param name="baudrate">115200</param>
             </hardware>
 
@@ -205,11 +224,15 @@
                 <command_interface name="velocity"/>
                 <state_interface name="position"/>
                 <state_interface name="velocity"/>
+                <!-- Change to -1 if this wheel spins the wrong way -->
+                <param name="direction_multiplier">1</param>
             </joint>
-            <joint name="front_right_wheel_joint">
+            <joint name="rear_left_wheel_joint">
                 <command_interface name="velocity"/>
                 <state_interface name="position"/>
                 <state_interface name="velocity"/>
+                <!-- Change to -1 if this wheel spins the wrong way -->
+                <param name="direction_multiplier">1</param>
             </joint>
 
             <joint name="servo_1_joint">
@@ -237,23 +260,27 @@
             </sensor>
         </ros2_control>
 
-        <!-- REAR ARDUINO -->
-        <ros2_control name="ArduinoRear" type="system">
+        <!-- RIGHT ARDUINO -->
+        <ros2_control name="ArduinoRight" type="system">
             <hardware>
                 <plugin>arduino_hardware_interface/ArduinoHardwareInterface</plugin>
-                <param name="serial_port">/dev/ttyACM1</param>
+                <param name="serial_port">/dev/ttyAMA2</param>
                 <param name="baudrate">115200</param>
             </hardware>
 
-            <joint name="rear_left_wheel_joint">
+            <joint name="front_right_wheel_joint">
                 <command_interface name="velocity"/>
                 <state_interface name="position"/>
                 <state_interface name="velocity"/>
+                <!-- Change to -1 if this wheel spins the wrong way -->
+                <param name="direction_multiplier">-1</param>
             </joint>
             <joint name="rear_right_wheel_joint">
                 <command_interface name="velocity"/>
                 <state_interface name="position"/>
                 <state_interface name="velocity"/>
+                <!-- Change to -1 if this wheel spins the wrong way -->
+                <param name="direction_multiplier">-1</param>
             </joint>
 
             <joint name="servo_2_joint">
