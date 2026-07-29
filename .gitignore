@@ -53,3 +53,6 @@ CATKIN_IGNORE
 .vscode/
 
 vcpkg_installed/
+
+# ros dependencies
+rplidar_ros/

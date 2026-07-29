@@ -41,10 +41,13 @@ services:
   # PROFILE: DEV (Idle containers for coding)
   # ==========================================
   server_dev:
-    <<: *server-base
-    container_name: jazzy_server_dev
-    profiles: ["dev"]
-    command: tail -f /dev/null
+      <<: *server-base
+      container_name: jazzy_server_dev
+      profiles: ["dev"]
+      command: >
+        /bin/bash -c "
+        vcs import src < src/dependencies.repos &&
+        tail -f /dev/null"
 
   gui_dev:
     <<: *gui-base

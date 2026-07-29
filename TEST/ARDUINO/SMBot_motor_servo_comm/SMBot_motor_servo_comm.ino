@@ -7,7 +7,7 @@
 #include "infrared.h"
 #include "NanoIMU.h"
 
-#define ENABLEUSBSERIAL 1
+#define ENABLEUSBSERIAL 0
 
 #define MOTORDIRA P0_4
 #define MOTORDIRB P0_5
