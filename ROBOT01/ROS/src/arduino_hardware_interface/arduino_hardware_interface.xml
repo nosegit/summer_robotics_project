@@ -1,0 +1,9 @@
+<library path="arduino_hardware_interface">
+  <class name="arduino_hardware_interface/ArduinoHardwareInterface"
+         type="arduino_hardware_interface::ArduinoHardwareInterface"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>
+      ROS 2 Control hardware interface plugin bridging Arduino serial packets (Motors, Servos, IR, IMU).
+    </description>
+  </class>
+</library>

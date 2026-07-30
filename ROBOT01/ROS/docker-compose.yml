@@ -1,0 +1,73 @@
+# ==========================================
+# BASE TEMPLATES (Anchors)
+# ==========================================
+x-server-base: &server-base
+  build: 
+    context: .
+    dockerfile: Dockerfile.server
+  network_mode: host
+  privileged: true
+  shm_size: '4gb'
+  environment:
+    - ROS_DOMAIN_ID=42
+    # Combined path: Searches your custom workspace build directory AND system TB3/TB4 model paths
+    - GZ_SIM_RESOURCE_PATH=/root/ros2_ws/install:/opt/ros/jazzy/share/nav2_minimal_tb3/models:/opt/ros/jazzy/share/nav2_minimal_tb4/models
+    - LIBGL_ALWAYS_SOFTWARE=1
+    - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+  volumes:
+    - ./src:/root/ros2_ws/src:rw
+    - /dev:/dev
+
+x-gui-base: &gui-base
+  build: 
+    context: .
+    dockerfile: Dockerfile.gui
+  network_mode: host
+  environment:
+    - ROS_DOMAIN_ID=42
+    - DISPLAY=:0
+    - WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-}
+    - XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-}
+    - QT_X11_NO_MITSHM=1
+    - QT_QPA_PLATFORM=xcb
+    - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+  volumes:
+    - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    - /mnt/wslg:/mnt/wslg:ro
+    - ./src:/root/ros2_ws/src:rw
+
+services:
+  # ==========================================
+  # PROFILE: DEV (Idle containers for coding)
+  # ==========================================
+  server_dev:
+      <<: *server-base
+      container_name: jazzy_server_dev
+      profiles: ["dev"]
+      command: >
+        /bin/bash -c "
+        vcs import src < src/dependencies.repos &&
+        tail -f /dev/null"
+
+  gui_dev:
+    <<: *gui-base
+    container_name: jazzy_gui_dev
+    profiles: ["dev"]
+    command: tail -f /dev/null
+
+  # ==========================================
+  # PROFILE: TEST (Launches Reference TurtleBot Simulation)
+  # ==========================================
+  server_test:
+    <<: *server-base
+    container_name: jazzy_server_test
+    profiles: ["test"]
+    # Launches the standard reference world using the minimal-tb library
+    command: bash -c "ros2 launch nav2_bringup tb3_simulation_launch.py headless:=True slam:=True use_rviz:=False"
+
+  gui_test:
+    <<: *gui-base
+    container_name: jazzy_gui_test
+    profiles: ["test"]
+    # Automatically triggers RViz preset to map the test world environment
+    command: bash -c "ros2 launch nav2_bringup rviz_launch.py"
