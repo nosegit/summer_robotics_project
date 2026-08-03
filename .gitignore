@@ -42,6 +42,8 @@ qtcreator-*
 /planning/docs
 /planning/src
 
+AGENTS.md
+
 *~
 
 # Emacs
@@ -56,3 +58,4 @@ vcpkg_installed/
 
 # ros dependencies
 rplidar_ros/
+
