@@ -7,7 +7,7 @@
 #include "infrared.h"
 #include "NanoIMU.h"
 
-#define ENABLEUSBSERIAL 0
+#define ENABLEUSBSERIAL 1
 
 #define MOTORDIRA P0_4
 #define MOTORDIRB P0_5
@@ -17,7 +17,6 @@
 #define MOTORENCODERB P1_12
 
 #define TICKPERREVOLUTION 1788  // 298*6
-
 MOTOR _motor(MOTORDIRA, MOTORPWMA, MOTORENCODERA, MOTORDIRB, MOTORPWMB, MOTORENCODERB);
 
 ARDUINO_STATE _arduino_state;
