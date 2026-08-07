@@ -211,17 +211,17 @@
         <ros2_control name="ArduinoLeft" type="system">
             <hardware>
                 <plugin>arduino_hardware_interface/ArduinoHardwareInterface</plugin>
-                <param name="serial_port">/dev/ttyUSB0</param>
+                <param name="serial_port">/dev/ttyNANO_L</param>
                 <param name="baudrate">115200</param>
             </hardware>
 
-            <joint name="front_left_wheel_joint">
+            <joint name="rear_left_wheel_joint">
                 <command_interface name="velocity"/>
                 <state_interface name="position"/>
                 <state_interface name="velocity"/>
                 <param name="direction_multiplier">1</param>
             </joint>
-            <joint name="rear_left_wheel_joint">
+            <joint name="front_left_wheel_joint">
                 <command_interface name="velocity"/>
                 <state_interface name="position"/>
                 <state_interface name="velocity"/>
@@ -260,13 +260,13 @@
                 <param name="baudrate">115200</param>
             </hardware>
 
-            <joint name="front_right_wheel_joint">
+            <joint name="rear_right_wheel_joint">
                 <command_interface name="velocity"/>
                 <state_interface name="position"/>
                 <state_interface name="velocity"/>
                 <param name="direction_multiplier">-1</param>
             </joint>
-            <joint name="rear_right_wheel_joint">
+            <joint name="front_right_wheel_joint">
                 <command_interface name="velocity"/>
                 <state_interface name="position"/>
                 <state_interface name="velocity"/>

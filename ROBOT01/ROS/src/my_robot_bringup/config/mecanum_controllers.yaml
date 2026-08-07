@@ -71,10 +71,11 @@ mecanum_drive_controller:
     rear_left_wheel_state_joint_name: rear_left_wheel_joint
     rear_right_wheel_state_joint_name: rear_right_wheel_joint
     kinematics:
-      wheels_radius: 0.10
-      wheelbase: 0.44
-      wheel_separation: 0.46
-      sum_of_robot_center_projection_on_X_Y_axis: 0.45
+      wheels_radius: 0.0325
+      wheelbase: 0.36
+      wheel_separation: 0.33
+      # sum_of_robot_center_projection_on_X_Y_axis: 0.45
+      sum_of_robot_center_projection_on_X_Y_axis: 0.345
     cmd_vel_timeout: 0.5
     reference_timeout: 1.0
     odom_frame_id: odom
