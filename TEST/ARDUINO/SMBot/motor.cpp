@@ -17,7 +17,10 @@ MOTOR::MOTOR(PinName DIRA,PinName PWMA,PinName ENCODERA,PinName DIRB,PinName PWM
   _ENCODERB.fall(mbed::callback(this, &MOTOR::EncoderB_trigger));
 }
 
-void MOTOR::Begin(){
+void MOTOR::Begin(ARDUINO_STATE* state){
+
+  _state = state;
+
   Set_frquency(0, _PWMA_FREQ);
   Set_frquency(1, _PWMB_FREQ);
 
@@ -38,12 +41,14 @@ void MOTOR::Begin(){
   _PID_TICKER.attach_us(mbed::callback(this,&MOTOR::_Pid_isr), _PID_INTERVAL_SEC * 1e6);
   _THREAD_PID.start(mbed::callback(this,&MOTOR::_Pid_loop));
 
+  _THREAD_STATE_UPDATE.start(mbed::callback(this,&MOTOR::_Update_state_loop));
+
 } 
 
 void MOTOR::Set_dir(int motor, int dir){
   switch (motor){
     case 0: _DIRA = dir ? 1:0; break;
-    case 1: _DIRB = dir ? 0:1; break;
+    case 1: _DIRB = dir ? 1:0; break;
   }
 }
 
@@ -66,10 +71,23 @@ void MOTOR::Set_speed(float speedA,float speedB){
   _ENCODERB_SET_SPEED = speedB;
 }
 
+void MOTOR::Set_speed_rads(float speedA, float speedB){
+  MOTOR::Set_speed(speedA/RADSPERTICK,speedB/RADSPERTICK);
+}
+
 float MOTOR::Get_speed(int motor){
 
-  return motor ? _ENCODERB_SPEED:_ENCODERA_SPEED;
+  return (float) (motor ? _ENCODERB_SPEED:_ENCODERA_SPEED);
 
+}
+
+void MOTOR::_Update_state_loop(){
+  for(;;){
+    _state->setActualSpeeds(Get_speed(0)*RADSPERTICK, Get_speed(1)*RADSPERTICK);
+    _state->setActualWheelPosition(_ENCODERA_CNT*RADSPERTICK, _ENCODERB_CNT*RADSPERTICK);
+
+    rtos::ThisThread::sleep_for(std::chrono::milliseconds(20)); // 50Hz
+  }
 }
 
 void MOTOR::_Pid_loop(){
@@ -85,6 +103,8 @@ void MOTOR::_Pid_loop(){
 
     Set_pwm(0, abs(pwmA));
     Set_pwm(1, abs(pwmB));
+
+    // _state->setActualSpeeds(Get_speed(0)*RADSPERTICK, Get_speed(1)*RADSPERTICK);
 
   }
 }
@@ -132,7 +152,7 @@ void MOTOR::EncoderA_trigger(){
 
 void MOTOR::EncoderB_trigger(){
 
-  _ENCODERB_CNT += _DIRB ? 1:-1;
+  _ENCODERB_CNT += _DIRB ? -1:1;
 
 }
 
