@@ -6,6 +6,7 @@ from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, Command, PythonExpression
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 
 def generate_launch_description():
     pkg_sim_path = get_package_share_directory('my_robot_sim')
@@ -23,7 +24,9 @@ def generate_launch_description():
     )
 
     # Process Xacro with simulation plugins enabled
-    robot_description = Command(['xacro ', xacro_file, ' use_sim:=true'])
+    robot_description = ParameterValue(
+        Command(['xacro ', xacro_file, ' use_sim:=true']), value_type=str
+    )
 
     # 1. Start Robot State Publisher with use_sim_time enabled
     node_robot_state_publisher = Node(
@@ -71,6 +74,8 @@ def generate_launch_description():
             '/cmd_vel@geometry_msgs/msg/Twist@gz.msgs.Twist',
             '/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry',
             '/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
+            '/camera/image_raw@sensor_msgs/msg/Image@gz.msgs.Image',
+            '/camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo',
             '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
             '/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V',
             '/joint_states@sensor_msgs/msg/JointState[gz.msgs.Model'
