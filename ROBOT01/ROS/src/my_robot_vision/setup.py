@@ -11,7 +11,10 @@ setup(
         ('share/ament_index/resource_index/packages', ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name, ['README.md']),
-        ('share/' + package_name + '/launch', ['launch/pi_camera.launch.py']),
+        ('share/' + package_name + '/launch', [
+            'launch/pi_camera.launch.py',
+            'launch/rtp_camera.launch.py',
+        ]),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -22,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             'pi_camera_publisher = my_robot_vision.pi_camera_publisher:main',
+            'rtp_camera_publisher = my_robot_vision.rtp_camera_publisher:main',
             'convert_camera_calibration = '
             'my_robot_vision.convert_npz_to_camera_info_yaml:main',
         ],

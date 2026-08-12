@@ -18,6 +18,17 @@ RUN apt-get update && apt-get install -y \
     ros-jazzy-controller-manager \
     ros-jazzy-twist-stamper \
     libserial-dev \
+    python3-numpy \
+    python3-opencv \
+    python3-gi \
+    python3-gst-1.0 \
+    gstreamer1.0-libav \
+    gstreamer1.0-plugins-base \
+    gstreamer1.0-plugins-good \
+    gir1.2-gstreamer-1.0 \
+    gir1.2-gst-plugins-base-1.0 \
+    gstreamer1.0-plugins-bad \
+    v4l-utils \
     nano \
     && rm -rf /var/lib/apt/lists/*
 

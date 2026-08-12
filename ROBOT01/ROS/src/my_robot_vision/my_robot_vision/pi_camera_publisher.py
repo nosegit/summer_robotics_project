@@ -1,4 +1,4 @@
-"""Publish Raspberry Pi Camera Module frames using the standard ROS camera API."""
+"""Publish Raspberry Pi CSI camera frames using Picamera2 and ROS camera topics."""
 
 import math
 from pathlib import Path
@@ -10,7 +10,7 @@ from sensor_msgs.msg import CameraInfo, Image
 
 
 class PiCameraPublisher(Node):
-    """Capture Pi Camera 2 images with Picamera2 and publish image plus CameraInfo."""
+    """Capture the Pi CSI camera with Picamera2 and publish image plus CameraInfo."""
 
     def __init__(self):
         super().__init__('pi_camera_publisher')
@@ -31,14 +31,19 @@ class PiCameraPublisher(Node):
             from picamera2 import Picamera2
         except ImportError as error:
             raise RuntimeError(
-                'Picamera2 is required on the Raspberry Pi. Install python3-picamera2 '
-                'from Raspberry Pi OS before launching this node.'
+                'Picamera2 is required. Install python3-picamera2 on Raspberry Pi OS '
+                'and run this node on the Pi host, not in Docker.'
             ) from error
 
+        # Picamera2 video configuration is the low-latency capture path. Two buffers
+        # and queue=False avoid holding a previously completed frame for the caller.
+        frame_duration_us = round(1_000_000 / fps)
         self.camera = Picamera2()
         configuration = self.camera.create_video_configuration(
             main={'size': (self.width, self.height), 'format': 'RGB888'},
-            controls={'FrameRate': float(fps)},
+            controls={'FrameDurationLimits': (frame_duration_us, frame_duration_us)},
+            buffer_count=2,
+            queue=False,
         )
         self.camera.configure(configuration)
         self.camera.start()
@@ -57,7 +62,6 @@ class PiCameraPublisher(Node):
         info.height = self.height
         info.distortion_model = 'plumb_bob'
         if not camera_info_url:
-            # A usable image stream, but not a calibration suitable for metric poses.
             focal_length = self.width / (2.0 * math.tan(1.0856 / 2.0))
             info.k = [focal_length, 0.0, self.width / 2.0, 0.0, focal_length,
                       self.height / 2.0, 0.0, 0.0, 1.0]
@@ -73,7 +77,6 @@ class PiCameraPublisher(Node):
         calibration_path = Path(camera_info_url.replace('file://', ''))
         if not calibration_path.is_file():
             raise FileNotFoundError(f'Camera calibration file not found: {calibration_path}')
-
         try:
             import yaml
         except ImportError as error:
@@ -90,7 +93,8 @@ class PiCameraPublisher(Node):
         return info
 
     def _publish_frame(self):
-        image = self.bridge.cv2_to_imgmsg(self.camera.capture_array('main'), encoding='rgb8')
+        frame = self.camera.capture_array('main')
+        image = self.bridge.cv2_to_imgmsg(frame, encoding='rgb8')
         image.header.stamp = self.get_clock().now().to_msg()
         image.header.frame_id = self.frame_id
         self.camera_info.header = image.header
