@@ -1,6 +1,5 @@
 from setuptools import find_packages, setup
 
-
 package_name = 'my_robot_vision'
 
 setup(
@@ -14,6 +13,7 @@ setup(
         ('share/' + package_name + '/launch', [
             'launch/pi_camera.launch.py',
             'launch/rtp_camera.launch.py',
+            'launch/aruco_pose_estimator.launch.py',  # Added ArUco launch file
         ]),
     ],
     install_requires=['setuptools'],
@@ -28,6 +28,7 @@ setup(
             'rtp_camera_publisher = my_robot_vision.rtp_camera_publisher:main',
             'convert_camera_calibration = '
             'my_robot_vision.convert_npz_to_camera_info_yaml:main',
+            'aruco_pose_estimator = my_robot_vision.aruco_pose_estimator:main',  # Added ArUco executable
         ],
     },
 )
