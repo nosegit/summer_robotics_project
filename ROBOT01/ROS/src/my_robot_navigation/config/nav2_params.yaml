@@ -4,7 +4,7 @@
 
 amcl:
   ros__parameters:
-    use_sim_time: false
+    use_sim_time: true
     transform_tolerance: 1.0
     alpha1: 0.2
     alpha2: 0.2
@@ -21,7 +21,7 @@ amcl:
 
 bt_navigator:
   ros__parameters:
-    use_sim_time: false
+    use_sim_time: true
     global_frame: map
     robot_base_frame: base_link
     odom_topic: /odom
@@ -37,7 +37,7 @@ bt_navigator:
 
 controller_server:
   ros__parameters:
-    use_sim_time: false
+    use_sim_time: true
     controller_frequency: 20.0 # 20.0
     min_x_velocity_threshold: 0.001
     min_y_velocity_threshold: 0.001
@@ -134,7 +134,7 @@ controller_server:
 planner_server:
   ros__parameters:
     expected_planner_frequency: 20.0
-    use_sim_time: false
+    use_sim_time: true
     planner_plugins: ["GridBased"]
     GridBased:
       plugin: "nav2_navfn_planner::NavfnPlanner" # <--- Fixed with double colons!
@@ -144,7 +144,7 @@ planner_server:
 
 behavior_server:
   ros__parameters:
-    use_sim_time: false
+    use_sim_time: true
     costmap_topic: local_costmap/costmap_raw
     footprint_topic: local_costmap/published_footprint
     cycle_frequency: 10.0
@@ -163,7 +163,7 @@ global_costmap:
       publish_frequency: 1.0
       global_frame: map
       robot_base_frame: base_link
-      use_sim_time: false
+      use_sim_time: true
       robot_radius: 0.30   # Replace with your actual physical robot radius in meters
       resolution: 0.05
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
@@ -197,7 +197,7 @@ local_costmap:
       publish_frequency: 2.0
       global_frame: odom
       robot_base_frame: base_link
-      use_sim_time: false
+      use_sim_time: true
       rolling_window: true
       width: 3
       height: 3
@@ -225,7 +225,7 @@ local_costmap:
 
 collision_monitor:
   ros__parameters:
-    use_sim_time: false
+    use_sim_time: true
     cmd_vel_in_topic: "cmd_vel_nav"
     cmd_vel_out_topic: "cmd_vel"
     update_frequency: 10.0
@@ -273,7 +273,7 @@ collision_monitor:
 
 docking_server:
   ros__parameters:
-    use_sim_time: false
+    use_sim_time: true
     controller_frequency: 50.0
     initial_perception_timeout: 5.0
     wait_charge_timeout: 5.0
@@ -295,7 +295,7 @@ docking_server:
 
 slam_toolbox:
   ros__parameters:
-    use_sim_time: false
+    use_sim_time: true
     odom_frame: "odom"
     base_frame: "base_link"
     scan_topic: "/scan"
@@ -337,7 +337,7 @@ velocity_smoother:
 # ==============================================================================
 lifecycle_manager_navigation:
   ros__parameters:
-    use_sim_time: false
+    use_sim_time: true
     autostart: true
     node_names: ['controller_server',
                 'velocity_smoother',
@@ -348,7 +348,7 @@ lifecycle_manager_navigation:
 
 lifecycle_manager_localization:
   ros__parameters:
-    use_sim_time: false
+    use_sim_time: true
     autostart: true
     node_names: ['amcl']
 

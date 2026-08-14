@@ -1,0 +1,166 @@
+<?xml version="1.0" ?>
+<sdf version='1.10'>
+  <world name='isa_map'>
+
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+
+    <!-- Ground Plane -->
+    <model name='ground_plane'>
+      <static>true</static>
+      <link name='link'>
+        <collision name='collision'>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.8 0.8 0.8 1</specular>
+          </material>
+        </visual>
+      </link>
+      <pose>0 0 0 0 0 0</pose>
+    </model>
+
+    <!-- Sun -->
+    <light name='sun' type='directional'>
+      <pose>0 0 10 0 0 0</pose>
+      <cast_shadows>true</cast_shadows>
+      <intensity>1</intensity>
+      <direction>-0.5 0.1 -0.9</direction>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <linear>0.01</linear>
+        <constant>0.9</constant>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+    </light>
+
+    <!-- ================= YOUR GROUPED FACILITY ================= -->
+    <model name="facility_layout">
+      <static>true</static>
+      <pose>0 0 0 0 0 0</pose>
+
+      <link name="main_top_left_wall_3m">
+          <pose>0 -1.5 1.0 0 0 0</pose> 
+          <collision name="collision"><geometry><box><size>0.1 3.0 2.0</size></box></geometry></collision>
+          <visual name="visual"><geometry><box><size>0.1 3.0 2.0</size></box></geometry></visual>
+      </link>
+
+      <link name="main_top_right_wall_4.5m">
+          <pose>0 -7.125 1.0 0 0 0</pose> 
+          <collision name="collision"><geometry><box><size>0.1 4.5 2.0</size></box></geometry></collision>
+          <visual name="visual"><geometry><box><size>0.1 4.5 2.0</size></box></geometry></visual>
+      </link>  
+
+      <link name="main_right_wall_4.5m">
+          <pose>-4.0 -7.0 1.0 0 0 1.5707</pose> 
+          <collision name="collision"><geometry><box><size>0.1 8.0 2.0</size></box></geometry></collision>
+          <visual name="visual"><geometry><box><size>0.1 8.0 2.0</size></box></geometry></visual>
+      </link>  
+
+      <link name="corridor_top_wall_4.5m">
+          <pose>2.0 -3.75 1.0 0 0 0</pose> 
+          <collision name="collision"><geometry><box><size>0.1 7.5 2.0</size></box></geometry></collision>
+          <visual name="visual"><geometry><box><size>0.1 7.5 2.0</size></box></geometry></visual>
+      </link>  
+
+      <link name="corridor_right_wall_2m">
+          <pose>1.0 -9.5 1.0 0 0 1.5707</pose> 
+          <collision name="collision"><geometry><box><size>0.1 2.0 2.0</size></box></geometry></collision>
+          <visual name="visual"><geometry><box><size>0.1 2.0 2.0</size></box></geometry></visual>
+      </link>  
+
+      <link name="delivery_left_wall_4m">
+          <pose>4.0 -7.5 1.0 0 0 1.5707</pose> 
+          <collision name="collision"><geometry><box><size>0.1 4.0 2.0</size></box></geometry></collision>
+          <visual name="visual"><geometry><box><size>0.1 4.0 2.0</size></box></geometry></visual>
+      </link>
+
+      <link name="delivery_bottom_right_wall_2m">
+          <pose>2.0 -10.5 1.0 0 0 0</pose> 
+          <collision name="collision"><geometry><box><size>0.1 2.0 2.0</size></box></geometry></collision>
+          <visual name="visual"><geometry><box><size>0.1 2.0 2.0</size></box></geometry></visual>
+      </link>
+
+      <link name="obstacle_1">
+          <pose>-2.15 -1.5 0.25 0 0 1.5707</pose> 
+          <collision name="collision"><geometry><box><size>0.3 1.0 0.5</size></box></geometry></collision>
+          <visual name="visual">
+              <geometry><box><size>1.0 0.3 0.5</size></box></geometry>
+              <material><diffuse>0.5 0.0 0.0 1</diffuse></material>
+          </visual>
+      </link>
+      
+      <link name="obstacle_2">
+          <pose>-2.15 -3.0 0.25 0 0 1.5707</pose> 
+          <collision name="collision"><geometry><box><size>0.3 1.0 0.5</size></box></geometry></collision>
+          <visual name="visual">
+              <geometry><box><size>1.0 0.3 0.5</size></box></geometry>
+              <material><diffuse>0.5 0.0 0.0 1</diffuse></material>
+          </visual>
+      </link>
+
+      <link name="obstacle_3">
+          <pose>-2.15 -5.0 0.25 0 0 1.5707</pose> 
+          <collision name="collision"><geometry><box><size>0.3 1.0 0.5</size></box></geometry></collision>
+          <visual name="visual">
+              <geometry><box><size>1.0 0.3 0.5</size></box></geometry>
+              <material><diffuse>0.5 0.0 0.0 1</diffuse></material>
+          </visual>
+      </link>
+
+      <link name="obstacle_4">
+          <pose>-2.15 -6.5 0.25 0 0 1.5707</pose> 
+          <collision name="collision"><geometry><box><size>0.3 1.0 0.5</size></box></geometry></collision>
+          <visual name="visual">
+              <geometry><box><size>1.0 0.3 0.5</size></box></geometry>
+              <material><diffuse>0.5 0.0 0.0 1</diffuse></material>
+          </visual>
+      </link>
+
+      <link name="pickup_location_1">
+        <pose>-6 -2.25 0.005 0 0 0</pose> 
+        <visual name="visual">
+          <geometry><box><size>0.2 1.5 0.01</size></box></geometry>
+          <material><diffuse>0.0 1.0 0.0 1.0</diffuse></material>
+        </visual>
+      </link>
+
+      <link name="pickup_location_2">
+        <pose>-6 -5.75 0.005 0 0 0</pose> 
+        <visual name="visual">
+          <geometry><box><size>0.2 1.5 0.01</size></box></geometry>
+          <material><diffuse>0.0 1.0 0.0 1.0</diffuse></material>
+        </visual>
+      </link>
+
+      <link name="Recipe_location">
+        <pose>4 -9.5 0.005 0 0 0</pose> 
+        <visual name="visual">
+          <geometry><box><size>1.0 1.0 0.01</size></box></geometry>
+          <material><diffuse>0.0 1.0 0.0 1.0</diffuse></material>
+        </visual>
+      </link>
+
+    </model>
+  </world>
+</sdf>
