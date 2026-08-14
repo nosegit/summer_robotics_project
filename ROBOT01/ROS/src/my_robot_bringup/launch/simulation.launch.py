@@ -51,12 +51,13 @@ def generate_launch_description():
         DeclareLaunchArgument('headless', default_value='true'),
         DeclareLaunchArgument(
             'map',
-            default_value=os.path.join(navigation_share, 'maps', 'simple_room.yaml'),
+            # default_value=os.path.join(navigation_share, 'maps', 'simple_room.yaml'),
+            default_value=os.path.join(navigation_share, 'maps', 'isa_map.yaml'),
             description='Map YAML used when mode:=localization.',
         ),
         DeclareLaunchArgument(
             'params_file',
-            default_value=os.path.join(navigation_share, 'config', 'nav2_params.yaml'),
+            default_value=os.path.join(navigation_share, 'config', 'nav2_params_sim.yaml'),
         ),
         gazebo,
         nav2,

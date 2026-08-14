@@ -5,10 +5,10 @@
     <xacro:property name="chassis_length" value="0.45"/>  
     <xacro:property name="chassis_width"  value="0.30"/>  
     <xacro:property name="chassis_height" value="0.05"/>  
-    <xacro:property name="chassis_mass"   value="15.0"/>  
+    <xacro:property name="chassis_mass"   value="0.5"/>  
     <xacro:property name="wheel_radius"   value="0.0325"/> 
     <xacro:property name="wheel_thickness" value="0.03"/> 
-    <xacro:property name="wheel_mass"     value="1.5"/>  
+    <xacro:property name="wheel_mass"     value="0.1"/>  
     <xacro:property name="ground_clearance" value="0.05"/> 
 
     <xacro:property name="wheel_inset_x" value="0.045"/> 
@@ -116,7 +116,8 @@
             <parent link="base_link"/>
             <child link="${prefix}_wheel"/>
             <origin xyz="${x_reflect * wheel_pos_x} ${y_reflect * wheel_pos_y} ${wheel_pos_z}" rpy="0 0 0"/>
-            <axis xyz="0 ${z_axis_reflect} 0"/>
+            <!-- <axis xyz="0 ${z_axis_reflect} 0"/> -->
+            <axis xyz="0 1 0"/>
         </joint>
         
         <gazebo reference="${prefix}_wheel">
@@ -360,7 +361,7 @@
     <!-- SIMULATION (Gazebo Plugins) -->
     <xacro:if value="$(arg use_sim)">
         <gazebo>
-            <plugin filename="gz-sim-mecanum-drive-system" name="gz::sim::systems::MecanumDrive">
+            <!-- <plugin filename="gz-sim-mecanum-drive-system" name="gz::sim::systems::MecanumDrive">
                 <front_left_joint>front_left_wheel_joint</front_left_joint>
                 <front_right_joint>front_right_wheel_joint</front_right_joint>
                 <back_left_joint>rear_left_wheel_joint</back_left_joint>
@@ -374,7 +375,15 @@
                 <tf_topic>/tf</tf_topic>
                 <frame_id>odom</frame_id>
                 <child_frame_id>base_link</child_frame_id>
+            </plugin> -->
+            <plugin filename="gz-sim-odometry-publisher-system" name="gz::sim::systems::OdometryPublisher">
+                <odom_frame>odom</odom_frame>
+                <robot_base_frame>base_link</robot_base_frame>
+                <odom_topic>/odom</odom_topic>
+                <tf_topic>/tf</tf_topic>
+                <odom_publish_frequency>50</odom_publish_frequency>
             </plugin>
+
             <plugin filename="gz-sim-velocity-control-system" name="gz::sim::systems::VelocityControl">
                 <topic>/cmd_vel</topic>
             </plugin>
@@ -392,7 +401,7 @@
                 <pose>0 0 0 0 0 0</pose>
                 <always_on>true</always_on>
                 <update_rate>${lidar_update_rate}</update_rate>
-                <visualize>true</visualize>
+                <visualize>false</visualize>
                 <topic>/scan</topic>
                 <gz_frame_id>laser_frame</gz_frame_id>
                 <lidar>
@@ -425,7 +434,7 @@
                 <pose>0 0 0 0 0 0</pose>
                 <always_on>true</always_on>
                 <update_rate>${camera_update_rate}</update_rate>
-                <visualize>true</visualize>
+                <visualize>false</visualize>
                 <topic>/camera/image_raw</topic>
                 <gz_frame_id>camera_optical_frame</gz_frame_id>
                 <camera>

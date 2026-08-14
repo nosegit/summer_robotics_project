@@ -12,8 +12,8 @@ def generate_launch_description():
     pkg_sim_path = get_package_share_directory('my_robot_sim')
     pkg_description_path = get_package_share_directory('my_robot_description')
 
-    world_file = os.path.join(pkg_sim_path, 'worlds', 'simple_room.sdf')
-    # world_file = os.path.join(pkg_sim_path, 'worlds', 'isa_map.sdf')
+    # world_file = os.path.join(pkg_sim_path, 'worlds', 'simple_room.sdf')
+    world_file = os.path.join(pkg_sim_path, 'worlds', 'isa_map.sdf')
     xacro_file = os.path.join(pkg_description_path, 'urdf', 'mecanum_robot.urdf.xacro')
 
     headless = LaunchConfiguration('headless')
