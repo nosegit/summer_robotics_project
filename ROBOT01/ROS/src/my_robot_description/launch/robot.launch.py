@@ -5,6 +5,7 @@ from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration, Command
 from launch.conditions import IfCondition
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue  # <-- Import ParameterValue
 
 def generate_launch_description():
     pkg_path = get_package_share_directory('my_robot_description')
@@ -25,8 +26,11 @@ def generate_launch_description():
         description='Launch non-GUI joint_state_publisher to broadcast default 0.0 joint positions'
     )
 
-    # Process Xacro file
-    robot_description = Command(['xacro ', xacro_file, ' use_sim:=', use_sim])
+    # Process Xacro file and explicitly force string type
+    robot_description = ParameterValue(
+        Command(['xacro ', xacro_file, ' use_sim:=', use_sim]),
+        value_type=str
+    )
 
     # 1. Robot State Publisher
     node_robot_state_publisher = Node(
@@ -39,7 +43,7 @@ def generate_launch_description():
         }]
     )
 
-# 2. Joint State Publisher (Headless)
+    # 2. Joint State Publisher (Headless)
     node_joint_state_publisher = Node(
         package='joint_state_publisher',
         executable='joint_state_publisher',
