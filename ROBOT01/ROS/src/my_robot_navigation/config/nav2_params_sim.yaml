@@ -60,76 +60,84 @@ controller_server:
       xy_goal_tolerance: 0.25
       yaw_goal_tolerance: 0.25
 
-    # # DWB Local Planner (Configured for Holonomic/Mecanum Translation)
-    # FollowPath:
-    #   plugin: "dwb_core::DWBLocalPlanner"
-    #   debug_trajectory_details: true
-    #   min_vel_x: -0.26
-    #   max_vel_x: 0.26
-    #   min_vel_y: -0.26      # Enabled for Mecanum (Lateral movements)
-    #   max_vel_y: 0.26       # Enabled for Mecanum (Lateral movements)
-    #   max_vel_theta: 1.0
-    #   min_speed_xy: 0.0
-    #   max_speed_xy: 0.26
-    #   min_speed_theta: 0.0
-    #   acc_lim_x: 2.5
-    #   acc_lim_y: 2.5        # Lateral acceleration limit
-    #   acc_lim_theta: 3.2
-    #   decel_lim_x: -2.5
-    #   decel_lim_y: -2.5
-    #   decel_lim_theta: -3.2
-    #   vx_samples: 20
-    #   vy_samples: 20        # Sample lateral speeds
-    #   vtheta_samples: 20
-    #   # Basic DWB Critics
-    #   # critics: ["ObstacleFootprint", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
-    #   # ObstacleFootprint.scale: 0.02
-    #   # PathAlign.scale: 32.0 # 32.0
-    #   # PathAlign.forward_point_distance: 0.325
-    #   # GoalAlign.scale: 24.0 # 24.0
-    #   # GoalAlign.forward_point_distance: 0.325
-    #   # PathDist.scale: 32.0
-    #   # GoalDist.scale: 24.0
+    # DWB Local Planner (Configured for Holonomic/Mecanum Translation)
+    FollowPath:
+      plugin: "dwb_core::DWBLocalPlanner"
+      debug_trajectory_details: true
+      min_vel_x: -0.5
+      max_vel_x: 0.5
+      min_vel_y: -0.5      # Enabled for Mecanum (Lateral movements)
+      max_vel_y: 0.5       # Enabled for Mecanum (Lateral movements)
+      max_vel_theta: 1.0
+      min_speed_xy: 0.0
+      max_speed_xy: 0.5
+      min_speed_theta: 0.0
+      acc_lim_x: 2.5
+      acc_lim_y: 2.5        # Lateral acceleration limit
+      acc_lim_theta: 3.2
+      decel_lim_x: -2.5
+      decel_lim_y: -2.5
+      decel_lim_theta: -3.2
+      vx_samples: 20
+      vy_samples: 20        # Sample lateral speeds
+      vtheta_samples: 20
+      # Basic DWB Critics
+      # critics: ["ObstacleFootprint", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
+      # ObstacleFootprint.scale: 0.02
+      # PathAlign.scale: 32.0 # 32.0
+      # PathAlign.forward_point_distance: 0.325
+      # GoalAlign.scale: 24.0 # 24.0
+      # GoalAlign.forward_point_distance: 0.325
+      # PathDist.scale: 32.0
+      # GoalDist.scale: 24.0
 
-    #   critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalDist", "PathDist"]
-    #   PathDist.scale: 32.0
-    #   GoalDist.scale: 24.0
-    #   BaseObstacle.scale: 0.02
-    #   Oscillation.scale: 1.0
-    #   RotateToGoal.scale: 0.1
+      # Ensure PathAlign and GoalAlign are listed in critics
+      critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalDist", "PathDist", "PathAlign", "GoalAlign"]
+      
+      # --- Critic Weights ---
+      PathDist.scale: 32.0       # Pulls the trajectory toward the path line
+      GoalDist.scale: 24.0       # Drives forward toward goal
+      BaseObstacle.scale: 4.0    # Balanced so it doesn't freak out near gap walls
+      
+      # --- Aim Toward Path Alignment Settings ---
+      PathAlign.scale: 16.0      # Penalizes trajectories not heading parallel to path
+      PathAlign.forward_point_distance: 0.3  # Lookahead distance (m) to measure heading alignment
+      
+      GoalAlign.scale: 1.0      # Keeps nose aligned toward local goal targets
+      GoalAlign.forward_point_distance: 0.3
 
     # --- MPPI Controller Configuration ---
-    FollowPath:
-      plugin: "nav2_mppi_controller::MPPIController"
-      time_steps: 56
-      model_dt: 0.05
-      batch_size: 2000
+    # FollowPath:
+    #   plugin: "nav2_mppi_controller::MPPIController"
+    #   time_steps: 56
+    #   model_dt: 0.05
+    #   batch_size: 2000
       
-      # TELL MPPI IT IS A MECANUM ROBOT
-      motion_model: "Omni"
+    #   # TELL MPPI IT IS A MECANUM ROBOT
+    #   motion_model: "Omni"
       
-      # Velocity limits (Make X and Y equal for smooth diagonal movement)
-      vx_max: 0.5
-      vx_min: -0.5
-      vy_max: 0.5
-      vy_min: -0.5
-      vtheta_max: 1.0
+    #   # Velocity limits (Make X and Y equal for smooth diagonal movement)
+    #   vx_max: 0.5
+    #   vx_min: -0.5
+    #   vy_max: 0.5
+    #   vy_min: -0.5
+    #   vtheta_max: 1.0
 
-      vx_std: 0.2
-      vy_std: 0.2
-      wz_std: 0.4
+    #   vx_std: 0.2
+    #   vy_std: 0.2
+    #   wz_std: 0.4
       
-      # Remove "PreferForwardCritic" and "PathAngleCritic" to prevent RC-car behavior
-      critics: ["ConstraintCritic", "GoalCritic", "GoalAngleCritic", "PathAlignCritic", "PathFollowCritic"]
+    #   # Remove "PreferForwardCritic" and "PathAngleCritic" to prevent RC-car behavior
+    #   critics: ["ConstraintCritic", "GoalCritic", "GoalAngleCritic", "PathAlignCritic", "PathFollowCritic"]
       
-      # Critic Weights
-      ConstraintCritic.scale: 20.0
-      PathFollowCritic.scale: 5.0
-      GoalCritic.scale: 3.0
+    #   # Critic Weights
+    #   ConstraintCritic.scale: 20.0
+    #   PathFollowCritic.scale: 5.0
+    #   GoalCritic.scale: 3.0
       
-      # Turn these down so the robot strafes instead of turning to face the path
-      GoalAngleCritic.scale: 0.0 
-      PathAlignCritic.scale: 0.0    
+    #   # Turn these down so the robot strafes instead of turning to face the path
+    #   GoalAngleCritic.scale: 30.0 
+    #   PathAlignCritic.scale: 2.0    
 
 planner_server:
   ros__parameters:
@@ -148,13 +156,19 @@ behavior_server:
     costmap_topic: local_costmap/costmap_raw
     footprint_topic: local_costmap/published_footprint
     cycle_frequency: 10.0
-    behavior_plugins: ["spin", "backup", "wait"]
-    spin:
-      plugin: "nav2_behaviors::Spin"
+    behavior_plugins: ["backup", "spin" , "wait"]
     backup:
       plugin: "nav2_behaviors::BackUp"
+      target_x_vel: -0.15       # MUST BE NEGATIVE to drive backward! (m/s)
+      target_y_vel: 0.0         # No lateral strafing while backing up
+      target_yaw_vel: 0.0       # Don't twist while backing up
+      simulate_ahead_time: 2.0  # Look 2 seconds behind to ensure we don't back into a wall
+    spin:
+      plugin: "nav2_behaviors::Spin"
     wait:
       plugin: "nav2_behaviors::Wait"
+
+
 
 global_costmap:
   global_costmap:
@@ -164,7 +178,8 @@ global_costmap:
       global_frame: map
       robot_base_frame: base_link
       use_sim_time: true
-      robot_radius: 0.30   # Replace with your actual physical robot radius in meters
+      # robot_radius: 0.30   # Replace with your actual physical robot radius in meters
+      footprint: "[ [0.175, 0.18], [0.175, -0.18], [-0.175, -0.18], [-0.175, 0.18] ]"
       resolution: 0.05
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
       
@@ -188,7 +203,7 @@ global_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
-        inflation_radius: 0.55
+        inflation_radius: 0.5
 
 local_costmap:
   local_costmap:
@@ -202,7 +217,8 @@ local_costmap:
       width: 3
       height: 3
       resolution: 0.05
-      robot_radius: 0.30   # Replace with your actual physical robot radius in meters
+      # robot_radius: 0.30   # Replace with your actual physical robot radius in meters
+      footprint: "[ [0.175, 0.18], [0.175, -0.18], [-0.175, -0.18], [-0.175, 0.18] ]"
       plugins: ["obstacle_layer", "inflation_layer"]
       
       obstacle_layer:
@@ -220,8 +236,8 @@ local_costmap:
       
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 3.0
-        inflation_radius: 0.55
+        cost_scaling_factor: 5.0
+        inflation_radius: 0.5
 
 collision_monitor:
   ros__parameters:
@@ -244,32 +260,27 @@ collision_monitor:
     # # Define the safety zones relative to base_link
     # polygons: ["polygon_stop"]
     
-    # polygon_stop:
-    #   type: "polygon"
-    #   points: [0.3, 0.3, 0.3, -0.3, -0.3, -0.3, -0.3, 0.3]
-    #   action_type: "STOP"
-    #   min_points: 3
-    #   visualize: true
+    # polygons: ["PolygonStop"]
+    # PolygonStop:
+    #   type: "circle"
+    #   radius: 0.44
+    #   action_type: "stop"
+    #   min_points: 4  # max_points: 3 for Humble
+    #   visualize: True
+    #   polygon_pub_topic: "polygon_stop"
+    #   enabled: True
+
     polygons: ["PolygonStop"]
     PolygonStop:
-      type: "circle"
-      radius: 0.44
+      type: "polygon"
+      # Outer quotes are required so ROS 2 parses this as a string:
+      # points: "[[0.375, 0.30], [0.375, -0.30], [-0.375, -0.30], [-0.375, 0.30]]"
+      points: "[[0.225, 0.23], [0.225, -0.23], [-0.225, -0.23], [-0.225, 0.23]]"
       action_type: "stop"
-      min_points: 4  # max_points: 3 for Humble
+      min_points: 4
       visualize: True
       polygon_pub_topic: "polygon_stop"
       enabled: True
-
-      # polygons: ["PolygonStop"]
-      # PolygonStop:
-      #   type: "polygon"
-      #   # Outer quotes are required so ROS 2 parses this as a string:
-      #   points: "[[0.375, 0.30], [0.375, -0.30], [-0.375, -0.30], [-0.375, 0.30]]"
-      #   action_type: "stop"
-      #   min_points: 4
-      #   visualize: True
-      #   polygon_pub_topic: "polygon_stop"
-      #   enabled: True
 
 docking_server:
   ros__parameters:
