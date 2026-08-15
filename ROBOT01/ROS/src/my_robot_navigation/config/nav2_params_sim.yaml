@@ -158,11 +158,16 @@ behavior_server:
     cycle_frequency: 10.0
     behavior_plugins: ["backup", "spin" , "wait"]
     backup:
-      plugin: "nav2_behaviors::BackUp"
-      target_x_vel: -0.15       # MUST BE NEGATIVE to drive backward! (m/s)
-      target_y_vel: 0.0         # No lateral strafing while backing up
-      target_yaw_vel: 0.0       # Don't twist while backing up
-      simulate_ahead_time: 2.0  # Look 2 seconds behind to ensure we don't back into a wall
+      plugin: "my_robot_nav2_behavior::MecanumEscape"
+      odom_topic: /odom
+      projection_step: 0.05
+      search_distance: 0.60
+      clearance_margin: 0.05
+      simulate_ahead_time: 2.0
+      min_remembered_speed: 0.03
+      velocity_memory_duration: 30.0
+      direction_preference_weight: 0.35
+      clearance_weight: 0.65
     spin:
       plugin: "nav2_behaviors::Spin"
     wait:
@@ -178,9 +183,10 @@ global_costmap:
       global_frame: map
       robot_base_frame: base_link
       use_sim_time: true
+      resolution: 0.05
       # robot_radius: 0.30   # Replace with your actual physical robot radius in meters
       footprint: "[ [0.175, 0.18], [0.175, -0.18], [-0.175, -0.18], [-0.175, 0.18] ]"
-      resolution: 0.05
+      footprint_padding: 0.03 # 3cm padding
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
       
       static_layer:
@@ -219,6 +225,7 @@ local_costmap:
       resolution: 0.05
       # robot_radius: 0.30   # Replace with your actual physical robot radius in meters
       footprint: "[ [0.175, 0.18], [0.175, -0.18], [-0.175, -0.18], [-0.175, 0.18] ]"
+      footprint_padding: 0.03 # 3cm padding
       plugins: ["obstacle_layer", "inflation_layer"]
       
       obstacle_layer:
@@ -252,35 +259,38 @@ collision_monitor:
     stop_pub_timeout: 0.5
     # Define what data stream the collision monitor should watch
     observation_sources: ["scan"]
+    # state_topic: "collision_monitor_state"
     
     scan:
       type: "scan"
       topic: "/scan"
 
-    # # Define the safety zones relative to base_link
-    # polygons: ["polygon_stop"]
-    
+    # Define the safety zones relative to base_link
     # polygons: ["PolygonStop"]
     # PolygonStop:
-    #   type: "circle"
-    #   radius: 0.44
+    #   type: "polygon"
+    #   # Outer quotes are required so ROS 2 parses this as a string:
+    #   # points: "[[0.375, 0.30], [0.375, -0.30], [-0.375, -0.30], [-0.375, 0.30]]"
+    #   points: "[[0.225, 0.23], [0.225, -0.23], [-0.225, -0.23], [-0.225, 0.23]]"
     #   action_type: "stop"
-    #   min_points: 4  # max_points: 3 for Humble
+    #   min_points: 4
     #   visualize: True
     #   polygon_pub_topic: "polygon_stop"
     #   enabled: True
 
-    polygons: ["PolygonStop"]
-    PolygonStop:
+    polygons: ["FootprintApproach"]
+    FootprintApproach:
       type: "polygon"
-      # Outer quotes are required so ROS 2 parses this as a string:
-      # points: "[[0.375, 0.30], [0.375, -0.30], [-0.375, -0.30], [-0.375, 0.30]]"
-      points: "[[0.225, 0.23], [0.225, -0.23], [-0.225, -0.23], [-0.225, 0.23]]"
-      action_type: "stop"
+      action_type: "approach"
+      footprint_topic: "local_costmap/published_footprint"
+      # Maintain approximately this much time before a predicted collision.
+      time_before_collision: 2.0
+      # Smaller values improve prediction accuracy.
+      simulation_time_step: 0.05
       min_points: 4
-      visualize: True
-      polygon_pub_topic: "polygon_stop"
-      enabled: True
+      visualize: true
+      polygon_pub_topic: "footprint_approach"
+      enabled: true
 
 docking_server:
   ros__parameters:

@@ -1,0 +1,11 @@
+<library path="mecanum_escape_behavior">
+  <class
+    name="my_robot_nav2_behavior::MecanumEscape"
+    type="my_robot_nav2_behavior::MecanumEscape"
+    base_class_type="nav2_core::Behavior">
+    <description>
+      Selects a collision-free direction from eight holonomic directions and moves
+      opposite the robot's last motion when possible.
+    </description>
+  </class>
+</library>

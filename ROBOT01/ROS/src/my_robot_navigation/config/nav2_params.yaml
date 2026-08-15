@@ -152,7 +152,16 @@ behavior_server:
     spin:
       plugin: "nav2_behaviors::Spin"
     backup:
-      plugin: "nav2_behaviors::BackUp"
+      plugin: "my_robot_nav2_behavior::MecanumEscape"
+      odom_topic: /odom
+      projection_step: 0.05
+      search_distance: 0.60
+      clearance_margin: 0.05
+      simulate_ahead_time: 2.0
+      min_remembered_speed: 0.03
+      velocity_memory_duration: 30.0
+      direction_preference_weight: 0.35
+      clearance_weight: 0.65
     wait:
       plugin: "nav2_behaviors::Wait"
 
