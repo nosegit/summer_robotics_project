@@ -15,9 +15,10 @@
     <xacro:property name="wheel_inset_y" value="0.015"/> 
 
     <xacro:property name="lidar_radius"     value="0.035"/>
-    <xacro:property name="lidar_height"     value="0.05"/>
+    <xacro:property name="lidar_height"     value="0.025"/>
     <xacro:property name="lidar_mass"       value="0.2"/>
-    <xacro:property name="lidar_x_offset"   value="-0.10"/>
+    <xacro:property name="lidar_x_offset"   value="-0.075"/>
+    <xacro:property name="lidar_z_offset"   value="0.21"/>
 
     <!-- Raspberry Pi Camera Module 2 dimensions (metres). -->
     <xacro:property name="camera_width" value="0.025"/>
@@ -26,6 +27,10 @@
     <xacro:property name="camera_board_depth" value="0.0016"/>
     <xacro:property name="camera_mass" value="0.01"/>
     <xacro:property name="camera_update_rate" value="30"/>
+    <xacro:property name="camera_x_offset"   value="0.01"/>
+    <xacro:property name="camera_y_offset"   value="${ (chassis_width/2.0) - 0.01}"/>
+    <xacro:property name="camera_z_offset"   value="0.025"/>
+
 
 
     <xacro:property name="wheel_pos_x" value="${(chassis_length / 2.0) - wheel_inset_x}"/>
@@ -151,7 +156,7 @@
     <joint name="laser_joint" type="fixed">
         <parent link="chassis"/>
         <child link="laser_frame"/>
-        <origin xyz="${lidar_x_offset} 0 ${(chassis_height/2.0) + (lidar_height/2.0)}" rpy="0 0 0"/>
+        <origin xyz="${lidar_x_offset} 0 ${(chassis_height/2.0) + (lidar_height/2.0) + (lidar_z_offset)}" rpy="0 0 0"/>
     </joint>
 
     <!-- CAMERA: +X points forward on the chassis.  The optical frame follows
@@ -176,7 +181,7 @@
     <joint name="camera_joint" type="fixed">
         <parent link="chassis"/>
         <child link="camera_link"/>
-        <origin xyz="${(chassis_length / 2.0) + (camera_depth / 2.0)} 0 0.08" rpy="0 0 0"/>
+        <origin xyz="${(camera_depth / 2.0) + camera_x_offset} ${camera_y_offset} ${chassis_height/2.0 + camera_height/2.0 + camera_z_offset}" rpy="0 0 1.5708"/>
     </joint>
 
     <link name="camera_optical_frame"/>
