@@ -1,0 +1,29 @@
+warning: in the working copy of 'ROBOT01/ROS/src/my_robot_description/rviz/rviz_view_nav.rviz', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/ROBOT01/ROS/src/my_robot_description/rviz/rviz_view_nav.rviz b/ROBOT01/ROS/src/my_robot_description/rviz/rviz_view_nav.rviz[m
+[1mindex bb4a91c..7389d9f 100644[m
+[1m--- a/ROBOT01/ROS/src/my_robot_description/rviz/rviz_view_nav.rviz[m
+[1m+++ b/ROBOT01/ROS/src/my_robot_description/rviz/rviz_view_nav.rviz[m
+[36m@@ -233,7 +233,7 @@[m [mVisualization Manager:[m
+       Head Length: 0.20000000298023224[m
+       Length: 0.30000001192092896[m
+       Line Style: Billboards[m
+[31m-      Line Width: 0.029999999329447746[m
+[32m+[m[32m      Line Width: 0.05000000074505806[m
+       Name: Path[m
+       Offset:[m
+         X: 0[m
+[36m@@ -320,11 +320,11 @@[m [mVisualization Manager:[m
+       Invert Z Axis: false[m
+       Name: Current View[m
+       Near Clip Distance: 0.009999999776482582[m
+[31m-      Scale: 65.9532699584961[m
+[32m+[m[32m      Scale: 66.45179748535156[m
+       Target Frame: <Fixed Frame>[m
+       Value: TopDownOrtho (rviz_default_plugins)[m
+[31m-      X: 0.9440781474113464[m
+[31m-      Y: -4.904095649719238[m
+[32m+[m[32m      X: 0.9892236590385437[m
+[32m+[m[32m      Y: -4.54293155670166[m
+     Saved: ~[m
+ Window Geometry:[m
+   Displays:[m
