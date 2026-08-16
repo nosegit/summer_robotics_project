@@ -18,6 +18,7 @@
     <xacro:property name="lidar_height"     value="0.025"/>
     <xacro:property name="lidar_mass"       value="0.2"/>
     <xacro:property name="lidar_x_offset"   value="-0.075"/>
+    <!-- <xacro:property name="lidar_x_offset"   value="0.0"/> -->
     <xacro:property name="lidar_z_offset"   value="0.21"/>
 
     <!-- Raspberry Pi Camera Module 2 dimensions (metres). -->
