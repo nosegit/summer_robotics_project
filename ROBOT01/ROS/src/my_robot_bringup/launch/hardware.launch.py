@@ -1,4 +1,4 @@
-"""Hardware bringup template: ros2_control, RPLIDAR A1, and Nav2.
+"""Start the hardware description, RPLIDAR A1, and Nav2.
 
 Verify serial devices, controller calibration, transforms, and safety limits before use.
 """
@@ -7,12 +7,9 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, RegisterEventHandler
-from launch.event_handlers import OnProcessStart
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import Command, LaunchConfiguration, PythonExpression
-from launch_ros.actions import Node
-from launch_ros.parameter_descriptions import ParameterValue
+from launch.substitutions import LaunchConfiguration, PythonExpression
 
 
 def generate_launch_description():
@@ -27,60 +24,12 @@ def generate_launch_description():
     lidar_port = LaunchConfiguration('lidar_port')
     lidar_baudrate = LaunchConfiguration('lidar_baudrate')
 
-    xacro_file = os.path.join(description_share, 'urdf', 'mecanum_robot.urdf.xacro')
-    robot_description = ParameterValue(
-        Command(['xacro ', xacro_file, ' use_sim:=false']), value_type=str
-    )
-    bringup_share = get_package_share_directory('my_robot_bringup')
-    controller_config = os.path.join(
-        bringup_share, 'config', 'mecanum_controllers.yaml'
-    )
-
-    description = IncludeLaunchDescription(
+    hardware_description = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(description_share, 'launch', 'robot.launch.py')
-        ),
-        launch_arguments={
-            'use_sim': 'false',
-            'publish_default_joints': 'false',
-        }.items(),
-    )
-
-    controller_manager = Node(
-        package='controller_manager', executable='ros2_control_node', output='screen',
-        remappings=[
-        ('/mecanum_drive_controller/odometry', '/odom'),
-        ('/mecanum_drive_controller/tf_odometry', '/tf'), 
-        ],
-        parameters=[{'robot_description': robot_description}, controller_config],
-    )
-    controller_spawners = [
-        Node(
-            package='controller_manager', executable='spawner', output='screen',
-            arguments=[controller, '--controller-manager', '/controller_manager'],
+            os.path.join(
+                description_share, 'launch', 'hardware_bringup.launch.py'
+            )
         )
-        for controller in (
-            'joint_state_broadcaster',
-            'imu_sensor_1_broadcaster',
-            'imu_sensor_2_broadcaster',
-            'ir_sensor_1_broadcaster',
-            'ir_sensor_2_broadcaster',
-            'ir_sensor_3_broadcaster',
-            'ir_sensor_4_broadcaster',
-            'mecanum_drive_controller',
-        )
-    ]
-    start_controllers = RegisterEventHandler(
-        OnProcessStart(target_action=controller_manager, on_start=controller_spawners)
-    )
-
-    twist_stamper = Node(
-        package='twist_stamper', executable='twist_stamper', name='twist_stamper',
-        remappings=[
-            ('cmd_vel_in', '/cmd_vel'),
-            ('cmd_vel_out', '/mecanum_drive_controller/reference'),
-        ],
-        output='screen',
     )
     lidar = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -121,10 +70,7 @@ def generate_launch_description():
             description='RPLIDAR A1 serial device; verify this on the robot.',
         ),
         DeclareLaunchArgument('lidar_baudrate', default_value='115200'),
-        description,
-        controller_manager,
-        start_controllers,
-        twist_stamper,
+        hardware_description,
         lidar,
         nav2,
     ])

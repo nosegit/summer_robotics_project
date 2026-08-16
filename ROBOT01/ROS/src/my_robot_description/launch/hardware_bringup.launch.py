@@ -11,12 +11,11 @@ from launch_ros.parameter_descriptions import ParameterValue
 
 def generate_launch_description():
     description_share = get_package_share_directory('my_robot_description')
-    hardware_share = get_package_share_directory('my_robot_bringup')
 
     xacro_file = os.path.join(
         description_share, 'urdf', 'mecanum_robot.urdf.xacro')
     controller_config = os.path.join(
-        hardware_share, 'config', 'mecanum_controllers.yaml')
+        description_share, 'config', 'mecanum_controllers.yaml')
 
     robot_description = ParameterValue(
         Command(['xacro ', xacro_file, ' use_sim:=false']),
@@ -47,32 +46,34 @@ def generate_launch_description():
         ],
     )
 
-    joint_state_broadcaster = Node(
-        package='controller_manager',
-        executable='spawner',
-        output='screen',
-        arguments=[
+    controller_spawners = [
+        Node(
+            package='controller_manager',
+            executable='spawner',
+            output='screen',
+            arguments=[
+                controller,
+                '--controller-manager', '/controller_manager',
+            ],
+        )
+        for controller in (
             'joint_state_broadcaster',
-            '--controller-manager', '/controller_manager',
-        ],
-    )
-
-    mecanum_drive_controller = Node(
-        package='controller_manager',
-        executable='spawner',
-        output='screen',
-        arguments=[
+            'imu_sensor_1_broadcaster',
+            'imu_sensor_2_broadcaster',
+            'ir_sensor_1_broadcaster',
+            'ir_sensor_2_broadcaster',
+            'ir_sensor_3_broadcaster',
+            'ir_sensor_4_broadcaster',
             'mecanum_drive_controller',
-            '--controller-manager', '/controller_manager',
-        ],
-    )
+        )
+    ]
 
     # teleop_twist_keyboard publishes geometry_msgs/Twist on /cmd_vel, while
     # the Jazzy mecanum controller consumes TwistStamped on its reference topic.
     twist_stamper = Node(
         package='twist_stamper',
         executable='twist_stamper',
-        name='hardware_twist_stamper',
+        name='twist_stamper',
         output='screen',
         remappings=[
             ('cmd_vel_in', '/cmd_vel'),
@@ -83,11 +84,7 @@ def generate_launch_description():
     start_after_controller_manager = RegisterEventHandler(
         OnProcessStart(
             target_action=controller_manager,
-            on_start=[
-                joint_state_broadcaster,
-                mecanum_drive_controller,
-                twist_stamper,
-            ],
+            on_start=controller_spawners,
         )
     )
 
@@ -95,4 +92,5 @@ def generate_launch_description():
         robot_state_publisher,
         controller_manager,
         start_after_controller_manager,
+        twist_stamper,
     ])

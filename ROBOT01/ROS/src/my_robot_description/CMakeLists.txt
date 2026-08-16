@@ -7,9 +7,9 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 
-# Install launch and urdf directories to the share folder
+# Install launch and runtime asset directories to the share folder
 install(
-  DIRECTORY launch urdf rviz
+  DIRECTORY config launch urdf rviz
   DESTINATION share/${PROJECT_NAME}
 )
 

@@ -1,78 +1,53 @@
 # my_robot_description
 
-A ROS 2 package containing the URDF/Xacro description, hardware configuration (`ros2_control`), and simulation plugins for a **Mecanum Wheel Mobile Robot**. This package is structured for a multi-container Docker deployment where a headless server container publishes the robot description and TF tree, while a separate GUI container visualizes the robot using RViz 2.
+ROS 2 URDF/Xacro, `ros2_control` hardware configuration, and simulation plugins for a mecanum-wheel mobile robot. In the multi-container Docker setup, the headless server publishes the robot description and TF tree, while the GUI container runs RViz 2.
 
----
-
-## 📁 Package Structure
+## Package structure
 
 ```text
 my_robot_description/
 ├── CMakeLists.txt
 ├── package.xml
 ├── launch/
-│   ├── robot.launch.py     # Headless robot description & joint state publisher
-│   └── rviz.launch.py      # Launches RViz2 with the saved configuration
+│   ├── robot.launch.py     # Headless description and joint-state publisher
+│   └── rviz.launch.py      # RViz 2 with the saved configuration
 ├── urdf/
-│   └── mecanum_robot.urdf.xacro # Main mecanum robot Xacro model
+│   └── mecanum_robot.urdf.xacro
 └── rviz/
-    └── rviz_view.rviz      # Saved RViz2 display configuration
+    └── rviz_view.rviz
 ```
 
----
+## Build and setup
 
-## 🛠️ Build & Workspace Setup
+Build in the workspace, then source it:
 
-1. **Navigate to your workspace and build the package:**
-   ```bash
-   cd ~/ros2_ws
-   colcon build --packages-select my_robot_description
-   source install/setup.bash
-   ```
-
-2. **Source the workspace in all terminal sessions (or add to `~/.bashrc`):**
-   ```bash
-   source ~/ros2_ws/install/setup.bash
-   ```
-
----
-
-## 🚀 Operational Modes & Launch Reference
-
-The robot can be launched in **three distinct operational modes** depending on whether you are inspecting the model standalone, running physical Arduino motors, or running a full Gazebo simulation.
-
-### Operational Mode Configuration & Command Matrix
-
-| Operational Mode | `use_sim` | `publish_default_joints` | What Publishes `/joint_states`? | What Provides Clock Time? | Exact Command to Run |
-| :--- | :---: | :---: | :--- | :--- | :--- |
-| **1. Watch URDF Only**<br>*(Standalone TF / RViz Test)* | `false` | **`true`** | Dummy `joint_state_publisher`<br>*(Fakes **0.0** radians for all joints)* | Your Server's **System Clock** | `ros2 launch my_robot_description robot.launch.py use_sim:=false publish_default_joints:=true` |
-| **2. Real Hardware**<br>*(Arduino Motors Connected)* | `false` | **`false`** | Your **Arduino Encoders** via<br>`ros2_control` hardware driver | Your Server's **System Clock** | `ros2 launch my_robot_description robot.launch.py use_sim:=false publish_default_joints:=false` |
-| **3. Gazebo Simulation**<br>*(Full Simulation Running)* | **`true`** | **`false`** | **Gazebo Physics Engine**<br>*(via `gz-sim` plugin)* | **Gazebo Sim Clock**<br>*(via the `/clock` topic)* | `ros2 launch my_robot_description robot.launch.py use_sim:=true publish_default_joints:=false` |
-
-> [!NOTE]
-> Running `ros2 launch my_robot_description robot.launch.py` without arguments defaults to **Watch URDF Only** mode (`use_sim:=false publish_default_joints:=true`).
-
----
-
-## 🖥️ Launching on the Server Docker (Headless)
-
-Run the appropriate launch command inside your **Server Docker container** based on your target mode:
-
-### 1. Watch URDF Only (No Hardware or Sim)
-Useful for verifying the TF tree and inspecting URDF links/visuals in RViz without physical hardware:
 ```bash
-ros2 launch my_robot_description robot.launch.py use_sim:=false publish_default_joints:=true
+cd ~/ros2_ws
+colcon build --packages-select my_robot_description
+source install/setup.bash
 ```
 
-### 2. Real Hardware Mode (Arduino `ros2_control`)
-Disables dummy joint states so that your real Arduino hardware interfaces publish encoder wheel positions:
+Source it in every terminal, or add this command to `~/.bashrc`:
+
 ```bash
-ros2 launch my_robot_description robot.launch.py use_sim:=false publish_default_joints:=false
+source ~/ros2_ws/install/setup.bash
 ```
 
-### 10 cm Hardware Test
+## Operating modes
 
-Launch `hardware_bringup.launch.py`, then command approximately 10 cm forward and stop:
+Run the appropriate command inside the server container.
+
+| Mode | `use_sim` | `publish_default_joints` | `/joint_states` source | Clock | Command |
+| --- | :---: | :---: | --- | --- | --- |
+| Watch URDF only (standalone TF/RViz test) | `false` | `true` | `joint_state_publisher`, with all joints at `0.0` radians | Server system clock | `ros2 launch my_robot_description robot.launch.py use_sim:=false publish_default_joints:=true` |
+| Real hardware (Arduino motors) | `false` | `false` | Arduino encoders through the `ros2_control` hardware driver | Server system clock | `ros2 launch my_robot_description robot.launch.py use_sim:=false publish_default_joints:=false` |
+| Gazebo simulation | `true` | `false` | Gazebo physics through the `gz-sim` plugin | Gazebo `/clock` | `ros2 launch my_robot_description robot.launch.py use_sim:=true publish_default_joints:=false` |
+
+Launching `robot.launch.py` without arguments defaults to Watch URDF Only mode (`use_sim:=false publish_default_joints:=true`). This mode is useful for checking the TF tree and URDF links/visuals without hardware or simulation. Hardware mode disables dummy joint states so the Arduino interfaces publish wheel encoder positions. Gazebo mode enables the `gz-sim` plugins and sets `use_sim_time:=true`.
+
+## Hardware motion tests
+
+Launch `hardware_bringup.launch.py`. To travel approximately 10 cm, stop, and inspect odometry:
 
 ```bash
 timeout --signal=INT 2s ros2 topic pub -r 20 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.05}}"
@@ -80,51 +55,36 @@ ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist "{}"
 ros2 topic echo /odom --once
 ```
 
-Rotate approximately 90° counterclockwise in place and stop:
+To rotate approximately 90 degrees counterclockwise in place and stop:
 
 ```bash
 timeout --signal=INT 6.28s ros2 topic pub -r 20 /cmd_vel geometry_msgs/msg/Twist "{angular: {z: 0.25}}"
 ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist "{}"
 ```
 
-### 3. Gazebo Simulation Mode
-Enables Gazebo `gz-sim` plugins and configures nodes to sync with simulation time (`use_sim_time:=true`):
-```bash
-ros2 launch my_robot_description robot.launch.py use_sim:=true publish_default_joints:=false
-```
+## RViz 2
 
----
+In the GUI container, use the launch file or run RViz 2 directly:
 
-## 📊 Launching RViz 2 (GUI Docker Container)
-
-From your **GUI Docker container**, use either of the following methods to launch RViz2 with your saved display configuration:
-
-### Option A: Using the launch file (Recommended)
 ```bash
 ros2 launch my_robot_description rviz.launch.py
-```
-
-### Option B: Using the direct one-line command
-```bash
 rviz2 -d /root/ros2_ws/src/my_robot_description/rviz/rviz_view.rviz
 ```
 
----
+## Troubleshooting
 
-## ⚠️ Troubleshooting & FAQ
+### `No transform from [front_left_wheel] to [base_link]`
 
-### 1. `No transform from [front_left_wheel] to [base_link]` in RViz
-* **Cause:** RViz is not receiving `/joint_states` data for continuous joints.
-* **Fix:** 
-  * If testing standalone (without Arduino or Gazebo), ensure you did **not** set `publish_default_joints:=false` or `use_sim:=true`.
-  * Verify `/joint_states` is publishing:
-    ```bash
-    ros2 topic echo /joint_states --once
-    ```
+RViz is not receiving `/joint_states` for continuous joints. During standalone testing, do not set `publish_default_joints:=false` or `use_sim:=true`. Verify the topic with:
 
-### 2. Why does `use_sim:=true` freeze transforms when Gazebo isn't running?
-* **Cause:** `use_sim:=true` tells all ROS 2 nodes to wait for the `/clock` topic published by Gazebo. If Gazebo is not actively running, node clocks freeze at `0.0`, stopping `/tf` broadcasts.
-* **Fix:** Only pass `use_sim:=true` when an active Gazebo simulation instance is publishing `/clock`.
+```bash
+ros2 topic echo /joint_states --once
+```
 
-### 3. Docker Container Communication Issues
-* Ensure both your **Server** and **GUI** containers are running on the host network (`--net=host` or `network_mode: "host"` in Docker Compose) and share the same `ROS_DOMAIN_ID`.
+### Transforms freeze with `use_sim:=true` and no Gazebo
+
+Simulation time makes ROS 2 nodes wait for Gazebo's `/clock`. Without an active Gazebo instance, time remains at `0.0` and `/tf` broadcasts stop. Use `use_sim:=true` only while Gazebo is publishing `/clock`.
+
+### Docker containers cannot communicate
+
+Ensure the server and GUI containers use the host network (`--net=host` or `network_mode: "host"` in Docker Compose) and the same `ROS_DOMAIN_ID`.
