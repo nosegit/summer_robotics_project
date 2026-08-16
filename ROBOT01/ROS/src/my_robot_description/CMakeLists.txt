@@ -13,4 +13,12 @@ install(
   DESTINATION share/${PROJECT_NAME}
 )
 
+install(
+  PROGRAMS
+    scripts/move_to_odom_distance.py
+    scripts/rotate_wheel_to_position.py
+    scripts/rotate_to_odom_angle.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 ament_package()

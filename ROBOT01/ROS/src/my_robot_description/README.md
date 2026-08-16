@@ -70,6 +70,23 @@ Disables dummy joint states so that your real Arduino hardware interfaces publis
 ros2 launch my_robot_description robot.launch.py use_sim:=false publish_default_joints:=false
 ```
 
+### 10 cm Hardware Test
+
+Launch `hardware_bringup.launch.py`, then command approximately 10 cm forward and stop:
+
+```bash
+timeout --signal=INT 2s ros2 topic pub -r 20 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.05}}"
+ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist "{}"
+ros2 topic echo /odom --once
+```
+
+Rotate approximately 90° counterclockwise in place and stop:
+
+```bash
+timeout --signal=INT 6.28s ros2 topic pub -r 20 /cmd_vel geometry_msgs/msg/Twist "{angular: {z: 0.25}}"
+ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist "{}"
+```
+
 ### 3. Gazebo Simulation Mode
 Enables Gazebo `gz-sim` plugins and configures nodes to sync with simulation time (`use_sim_time:=true`):
 ```bash

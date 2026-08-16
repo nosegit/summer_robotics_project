@@ -75,9 +75,9 @@ mecanum_drive_controller:
       # wheelbase: 0.36
       # wheel_separation: 0.33
       # sum_of_robot_center_projection_on_X_Y_axis: 0.345
-      wheelbase: 0.26
-      wheel_separation: 0.27
-      sum_of_robot_center_projection_on_X_Y_axis: 0.265
+      wheelbase: 0.25
+      wheel_separation: 0.30
+      sum_of_robot_center_projection_on_X_Y_axis:  0.285 # 0.2875
     cmd_vel_timeout: 0.5
     reference_timeout: 1.0
     odom_frame_id: odom
