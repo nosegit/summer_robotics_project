@@ -10,8 +10,8 @@ x-server-base: &server-base
   shm_size: '4gb'
   environment:
     - ROS_DOMAIN_ID=42
-    # Combined path: Searches your custom workspace build directory AND system TB3/TB4 model paths
-    - GZ_SIM_RESOURCE_PATH=/root/ros2_ws/install:/opt/ros/jazzy/share/nav2_minimal_tb3/models:/opt/ros/jazzy/share/nav2_minimal_tb4/models
+    # Gazebo model roots. The source path is mounted identically on every host.
+    - GZ_SIM_RESOURCE_PATH=/root/ros2_ws/src/my_robot_sim/models:/root/ros2_ws/install:/opt/ros/jazzy/share/nav2_minimal_tb3/models:/opt/ros/jazzy/share/nav2_minimal_tb4/models
     - LIBGL_ALWAYS_SOFTWARE=1
     - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
   volumes:
@@ -31,6 +31,8 @@ x-gui-base: &gui-base
     - QT_X11_NO_MITSHM=1
     - QT_QPA_PLATFORM=xcb
     - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+    # The GUI also needs the model textures when it renders the remote scene.
+    - GZ_SIM_RESOURCE_PATH=/root/ros2_ws/src/my_robot_sim/models:/opt/ros/jazzy/share/nav2_minimal_tb3/models:/opt/ros/jazzy/share/nav2_minimal_tb4/models
   volumes:
     - /tmp/.X11-unix:/tmp/.X11-unix:rw
     - /mnt/wslg:/mnt/wslg:ro
