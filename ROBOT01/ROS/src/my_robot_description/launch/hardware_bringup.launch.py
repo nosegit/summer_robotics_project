@@ -22,6 +22,25 @@ def generate_launch_description():
         value_type=str,
     )
 
+    controller_types = {
+        'joint_state_broadcaster':
+            'joint_state_broadcaster/JointStateBroadcaster',
+        'imu_sensor_L_broadcaster':
+            'imu_sensor_broadcaster/IMUSensorBroadcaster',
+        'imu_sensor_R_broadcaster':
+            'imu_sensor_broadcaster/IMUSensorBroadcaster',
+        'ir_sensor_1_broadcaster':
+            'range_sensor_broadcaster/RangeSensorBroadcaster',
+        'ir_sensor_2_broadcaster':
+            'range_sensor_broadcaster/RangeSensorBroadcaster',
+        'ir_sensor_3_broadcaster':
+            'range_sensor_broadcaster/RangeSensorBroadcaster',
+        'ir_sensor_4_broadcaster':
+            'range_sensor_broadcaster/RangeSensorBroadcaster',
+        'mecanum_drive_controller':
+            'mecanum_drive_controller/MecanumDriveController',
+    }
+
     robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -40,33 +59,34 @@ def generate_launch_description():
             ('/mecanum_drive_controller/odometry', '/odom'),
             ('/mecanum_drive_controller/tf_odometry', '/tf'),
         ],
-        parameters=[
-            {'robot_description': robot_description, 'use_sim_time': False},
-            controller_config,
-        ],
+        # Do not pass controller_config here. ros2_control on Jazzy drops
+        # parameter-file paths containing "robot_description", leaving a bare
+        # --params-file argument. The spawners load that file explicitly below.
+        parameters=[{
+            'robot_description': robot_description,
+            'use_sim_time': False,
+            'update_rate': 50,
+            **{
+                f'{name}.type': controller_type
+                for name, controller_type in controller_types.items()
+            },
+        }],
     )
 
-    controller_spawners = [
-        Node(
-            package='controller_manager',
-            executable='spawner',
-            output='screen',
-            arguments=[
-                controller,
-                '--controller-manager', '/controller_manager',
-            ],
-        )
-        for controller in (
-            'joint_state_broadcaster',
-            'imu_sensor_L_broadcaster',
-            'imu_sensor_R_broadcaster',
-            'ir_sensor_1_broadcaster',
-            'ir_sensor_2_broadcaster',
-            'ir_sensor_3_broadcaster',
-            'ir_sensor_4_broadcaster',
-            'mecanum_drive_controller',
-        )
-    ]
+    # A single spawner loads controllers in order. Starting one spawner per
+    # controller concurrently can make controller_manager load calls time out
+    # while the two serial hardware components are coming online.
+    controller_spawner = Node(
+        package='controller_manager',
+        executable='spawner',
+        output='screen',
+        arguments=[
+            *controller_types.keys(),
+            '--controller-manager', '/controller_manager',
+            '--param-file', controller_config,
+            '--service-call-timeout', '30.0',
+        ],
+    )
 
     # teleop_twist_keyboard publishes geometry_msgs/Twist on /cmd_vel, while
     # the Jazzy mecanum controller consumes TwistStamped on its reference topic.
@@ -84,7 +104,7 @@ def generate_launch_description():
     start_after_controller_manager = RegisterEventHandler(
         OnProcessStart(
             target_action=controller_manager,
-            on_start=controller_spawners,
+            on_start=[controller_spawner],
         )
     )
 

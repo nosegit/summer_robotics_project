@@ -11,6 +11,12 @@
     <xacro:property name="wheel_mass"     value="0.1"/>  
     <xacro:property name="ground_clearance" value="0.04"/> 
 
+    <!-- Temporary gripper collision footprint. -->
+    <xacro:property name="gripper_box_length" value="0.18"/>
+    <xacro:property name="gripper_box_width" value="0.25"/>
+    <xacro:property name="gripper_box_height" value="0.005"/>
+    <xacro:property name="gripper_box_mass" value="0.05"/>
+
     <xacro:property name="wheel_inset_x" value="0.045"/> 
     <xacro:property name="wheel_inset_y" value="0.015"/> 
 
@@ -101,6 +107,35 @@
         <parent link="base_link"/>
         <child link="chassis"/>
         <origin xyz="0 0 ${chassis_pos_z}" rpy="0 0 0"/>
+    </joint>
+
+    <!-- Placeholder gripper collision box. Its 25 cm side is parallel to the
+         robot width (Y), and its 18 cm side extends forward along +X. -->
+    <link name="gripper_collision_box">
+        <visual>
+            <geometry>
+                <box size="${gripper_box_length} ${gripper_box_width} ${gripper_box_height}"/>
+            </geometry>
+            <material name="gripper_orange">
+                <color rgba="0.9 0.4 0.05 0.7"/>
+            </material>
+        </visual>
+        <collision>
+            <geometry>
+                <box size="${gripper_box_length} ${gripper_box_width} ${gripper_box_height}"/>
+            </geometry>
+        </collision>
+        <xacro:inertial_box
+            mass="${gripper_box_mass}"
+            x="${gripper_box_length}"
+            y="${gripper_box_width}"
+            z="${gripper_box_height}"/>
+    </link>
+
+    <joint name="gripper_collision_box_joint" type="fixed">
+        <parent link="chassis"/>
+        <child link="gripper_collision_box"/>
+        <origin xyz="${(chassis_length + gripper_box_length) / 2.0} 0 0" rpy="0 0 0"/>
     </joint>
 
     <xacro:macro name="mecanum_wheel" params="prefix x_reflect y_reflect z_axis_reflect">

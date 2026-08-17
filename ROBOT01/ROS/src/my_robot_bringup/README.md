@@ -42,6 +42,7 @@ rviz2 -d /root/ros2_ws/src/my_robot_description/rviz/rviz_view_nav.rviz --ros-ar
 ISA map realhardware launch script
 ``` bash
 ros2 launch my_robot_bringup hardware.launch.py mode:=localization lidar_port:=/dev/ttyUSB0 map:=/root/ros2_ws/src/my_robot_navigation/maps/isa_map.yaml
+ros2 launch my_robot_bringup hardware.launch.py mode:=localization lidar_port:=/dev/ttyUSB0 map:=/root/ros2_ws/src/my_map2.yaml
 ```
 Rviz gui
 ``` bash
