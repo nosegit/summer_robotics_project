@@ -9,6 +9,7 @@ Panels:
         - /RobotModel1
         - /Map1/Topic1
         - /Path1
+        - /Polygon1
       Splitter Ratio: 0.5
     Tree Height: 756
   - Class: rviz_common/Selection
@@ -112,11 +113,16 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        imu_sensor_1:
+        gripper_collision_box:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        imu_sensor_2:
+          Value: true
+        imu_sensor_L:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        imu_sensor_R:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -263,7 +269,42 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /footprint_approach
+        Value: /local_costmap/published_footprint
+      Value: true
+    - Alpha: 1
+      Axes Length: 1
+      Axes Radius: 0.10000000149011612
+      Class: rviz_default_plugins/PoseWithCovariance
+      Color: 255; 25; 0
+      Covariance:
+        Orientation:
+          Alpha: 0.5
+          Color: 255; 255; 127
+          Color Style: Unique
+          Frame: Local
+          Offset: 1
+          Scale: 1
+          Value: true
+        Position:
+          Alpha: 0.30000001192092896
+          Color: 204; 51; 204
+          Scale: 1
+          Value: true
+        Value: true
+      Enabled: true
+      Head Length: 0.30000001192092896
+      Head Radius: 0.10000000149011612
+      Name: PoseWithCovariance
+      Shaft Length: 1
+      Shaft Radius: 0.05000000074505806
+      Shape: Arrow
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /amcl_pose
       Value: true
   Enabled: true
   Global Options:
@@ -320,11 +361,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 66.45179748535156
+      Scale: 95.40483093261719
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz_default_plugins)
-      X: 0.9892236590385437
-      Y: -4.54293155670166
+      X: 2.1409995555877686
+      Y: -6.304411888122559
     Saved: ~
 Window Geometry:
   Displays:
@@ -342,5 +383,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1908
-  X: 0
-  Y: 773
+  X: 1888
+  Y: -32

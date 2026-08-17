@@ -200,7 +200,8 @@ global_costmap:
       use_sim_time: true
       resolution: 0.05
       # robot_radius: 0.30   # Replace with your actual physical robot radius in meters
-      footprint: "[ [0.175, 0.18], [0.175, -0.18], [-0.175, -0.18], [-0.175, 0.18] ]"
+      # Chassis/wheels plus the fixed front gripper (front edge at x = 0.355 m).
+      footprint: "[ [0.175, 0.18], [0.355, 0.125], [0.355, -0.125], [0.175, -0.18], [-0.175, -0.18], [-0.175, 0.18] ]"
       footprint_padding: 0.05 # 5cm padding
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
       
@@ -239,7 +240,8 @@ local_costmap:
       height: 3
       resolution: 0.05
       # robot_radius: 0.30   # Replace with your actual physical robot radius in meters
-      footprint: "[ [0.175, 0.18], [0.175, -0.18], [-0.175, -0.18], [-0.175, 0.18] ]"
+      # Chassis/wheels plus the fixed front gripper (front edge at x = 0.355 m).
+      footprint: "[ [0.175, 0.18], [0.355, 0.125], [0.355, -0.125], [0.175, -0.18], [-0.175, -0.18], [-0.175, 0.18] ]"
       footprint_padding: 0.05 # 5cm padding
       plugins: ["obstacle_layer", "inflation_layer"]
       
