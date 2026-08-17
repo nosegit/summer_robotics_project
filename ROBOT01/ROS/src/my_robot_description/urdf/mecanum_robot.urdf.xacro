@@ -5,7 +5,7 @@
     <xacro:property name="chassis_length" value="0.35"/>  
     <xacro:property name="chassis_width"  value="0.30"/>  
     <xacro:property name="chassis_height" value="0.005"/>  
-    <xacro:property name="chassis_mass"   value="0.5"/>  
+    <xacro:property name="chassis_mass"   value="1.5"/>  
     <xacro:property name="wheel_radius"   value="0.0325"/> 
     <xacro:property name="wheel_thickness" value="0.03"/> 
     <xacro:property name="wheel_mass"     value="0.1"/>  
@@ -14,8 +14,8 @@
     <!-- Temporary gripper collision footprint. -->
     <xacro:property name="gripper_box_length" value="0.18"/>
     <xacro:property name="gripper_box_width" value="0.25"/>
-    <xacro:property name="gripper_box_height" value="0.005"/>
-    <xacro:property name="gripper_box_mass" value="0.05"/>
+    <xacro:property name="gripper_box_height" value="0.02"/>
+    <xacro:property name="gripper_box_mass" value="0.25"/>
 
     <xacro:property name="wheel_inset_x" value="0.045"/> 
     <xacro:property name="wheel_inset_y" value="0.015"/> 
@@ -56,10 +56,10 @@
     <xacro:property name="wheelbase"        value="${wheel_pos_x * 2.0}"/> 
     <xacro:property name="wheel_separation" value="${wheel_pos_y * 2.0}"/> 
 
-    <xacro:property name="imu_sensor_L_x_offset" value="-0.075"/>
-    <xacro:property name="imu_sensor_L_y_offset" value="0.085"/>
-    <xacro:property name="imu_sensor_R_x_offset" value="-0.075"/>
-    <xacro:property name="imu_sensor_R_y_offset" value="0.09"/>
+    <xacro:property name="imu_sensor_L_x_offset" value="-0.105"/>
+    <xacro:property name="imu_sensor_L_y_offset" value="0.080"/>
+    <xacro:property name="imu_sensor_R_x_offset" value="-0.105"/>
+    <xacro:property name="imu_sensor_R_y_offset" value="-0.090"/>
     <xacro:property name="imu_sensor_z_offset" value="0.2"/>
 
 
