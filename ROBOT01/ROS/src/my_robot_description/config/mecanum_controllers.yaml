@@ -5,10 +5,10 @@ controller_manager:
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
 
-    imu_sensor_1_broadcaster:
+    imu_sensor_L_broadcaster:
       type: imu_sensor_broadcaster/IMUSensorBroadcaster
 
-    imu_sensor_2_broadcaster:
+    imu_sensor_R_broadcaster:
       type: imu_sensor_broadcaster/IMUSensorBroadcaster
 
     ir_sensor_1_broadcaster:
@@ -26,15 +26,15 @@ controller_manager:
     mecanum_drive_controller:
       type: mecanum_drive_controller/MecanumDriveController
 
-imu_sensor_1_broadcaster:
+imu_sensor_L_broadcaster:
   ros__parameters:
-    sensor_name: "imu_sensor_1"
-    frame_id: "imu_sensor_1"
+    sensor_name: "imu_sensor_L"
+    frame_id: "imu_sensor_L"
 
-imu_sensor_2_broadcaster:
+imu_sensor_R_broadcaster:
   ros__parameters:
-    sensor_name: "imu_sensor_2"
-    frame_id: "imu_sensor_2"
+    sensor_name: "imu_sensor_R"
+    frame_id: "imu_sensor_R"
 
 ir_sensor_1_broadcaster:
   ros__parameters:

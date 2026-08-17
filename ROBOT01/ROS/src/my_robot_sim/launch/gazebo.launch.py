@@ -75,7 +75,9 @@ def generate_launch_description():
         output='screen',
         arguments=[
             '/cmd_vel@geometry_msgs/msg/Twist@gz.msgs.Twist',
-            '/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry',
+            '/odometry/wheel@nav_msgs/msg/Odometry[gz.msgs.Odometry',
+            '/imu_sensor_L_broadcaster/imu@sensor_msgs/msg/Imu[gz.msgs.IMU',
+            '/imu_sensor_R_broadcaster/imu@sensor_msgs/msg/Imu[gz.msgs.IMU',
             '/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
             '/camera/image_raw@sensor_msgs/msg/Image@gz.msgs.Image',
             '/camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo',

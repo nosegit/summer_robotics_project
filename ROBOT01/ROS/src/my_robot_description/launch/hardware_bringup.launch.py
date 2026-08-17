@@ -58,8 +58,8 @@ def generate_launch_description():
         )
         for controller in (
             'joint_state_broadcaster',
-            'imu_sensor_1_broadcaster',
-            'imu_sensor_2_broadcaster',
+            'imu_sensor_L_broadcaster',
+            'imu_sensor_R_broadcaster',
             'ir_sensor_1_broadcaster',
             'ir_sensor_2_broadcaster',
             'ir_sensor_3_broadcaster',

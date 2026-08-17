@@ -50,6 +50,13 @@
     <xacro:property name="wheelbase"        value="${wheel_pos_x * 2.0}"/> 
     <xacro:property name="wheel_separation" value="${wheel_pos_y * 2.0}"/> 
 
+    <xacro:property name="imu_sensor_L_x_offset" value="-0.075"/>
+    <xacro:property name="imu_sensor_L_y_offset" value="0.085"/>
+    <xacro:property name="imu_sensor_R_x_offset" value="-0.075"/>
+    <xacro:property name="imu_sensor_R_y_offset" value="0.09"/>
+    <xacro:property name="imu_sensor_z_offset" value="0.2"/>
+
+
     <!-- Sim Toggle -->
     <xacro:arg name="use_sim" default="false" />
 
@@ -193,18 +200,18 @@
     </joint>
 
     <!-- SENSOR LINKS FOR ROS2_CONTROL -->
-    <link name="imu_sensor_1"/>
-    <joint name="imu_1_joint" type="fixed">
+    <link name="imu_sensor_L"/>
+    <joint name="imu_L_joint" type="fixed">
         <parent link="chassis"/>
-        <child link="imu_sensor_1"/>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <child link="imu_sensor_L"/>
+        <origin xyz="${imu_sensor_L_x_offset} ${imu_sensor_L_y_offset} ${imu_sensor_z_offset}" rpy="0 0 0"/>
     </joint>
 
-    <link name="imu_sensor_2"/>
-    <joint name="imu_2_joint" type="fixed">
+    <link name="imu_sensor_R"/>
+    <joint name="imu_R_joint" type="fixed">
         <parent link="chassis"/>
-        <child link="imu_sensor_2"/>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <child link="imu_sensor_R"/>
+        <origin xyz="${imu_sensor_R_x_offset} ${imu_sensor_R_y_offset} ${imu_sensor_z_offset}" rpy="0 0 0"/>
     </joint>
     
     <link name="ir_sensor_1"/>
@@ -280,7 +287,7 @@
                 <state_interface name="position"/>
             </joint>
 
-            <sensor name="imu_sensor_1">
+            <sensor name="imu_sensor_L">
                 <state_interface name="orientation.x"/>
                 <state_interface name="orientation.y"/>
                 <state_interface name="orientation.z"/>
@@ -325,7 +332,7 @@
                 <state_interface name="position"/>
             </joint>
 
-            <sensor name="imu_sensor_2">
+            <sensor name="imu_sensor_R">
                 <state_interface name="orientation.x"/>
                 <state_interface name="orientation.y"/>
                 <state_interface name="orientation.z"/>
@@ -367,8 +374,9 @@
             <plugin filename="gz-sim-odometry-publisher-system" name="gz::sim::systems::OdometryPublisher">
                 <odom_frame>odom</odom_frame>
                 <robot_base_frame>base_link</robot_base_frame>
-                <odom_topic>/odom</odom_topic>
-                <tf_topic>/tf</tf_topic>
+                <odom_topic>/odometry/wheel</odom_topic>
+                <!-- The EKF, rather than raw simulation, owns odom to base_link. -->
+                <tf_topic>/odometry/wheel_tf</tf_topic>
                 <odom_publish_frequency>50</odom_publish_frequency>
             </plugin>
 
@@ -382,6 +390,48 @@
                 <joint>rear_left_wheel_joint</joint>
                 <joint>rear_right_wheel_joint</joint>
             </plugin>
+        </gazebo>
+
+        <gazebo reference="imu_sensor_L">
+            <sensor name="imu_sensor_L_sim" type="imu">
+                <always_on>true</always_on>
+                <update_rate>50</update_rate>
+                <topic>/imu_sensor_L_broadcaster/imu</topic>
+                <gz_frame_id>imu_sensor_L</gz_frame_id>
+                <imu>
+                    <angular_velocity>
+                        <x><noise type="gaussian"><mean>0.0</mean><stddev>0.002</stddev></noise></x>
+                        <y><noise type="gaussian"><mean>0.0</mean><stddev>0.002</stddev></noise></y>
+                        <z><noise type="gaussian"><mean>0.0</mean><stddev>0.002</stddev></noise></z>
+                    </angular_velocity>
+                    <linear_acceleration>
+                        <x><noise type="gaussian"><mean>0.0</mean><stddev>0.02</stddev></noise></x>
+                        <y><noise type="gaussian"><mean>0.0</mean><stddev>0.02</stddev></noise></y>
+                        <z><noise type="gaussian"><mean>0.0</mean><stddev>0.02</stddev></noise></z>
+                    </linear_acceleration>
+                </imu>
+            </sensor>
+        </gazebo>
+
+        <gazebo reference="imu_sensor_R">
+            <sensor name="imu_sensor_R_sim" type="imu">
+                <always_on>true</always_on>
+                <update_rate>50</update_rate>
+                <topic>/imu_sensor_R_broadcaster/imu</topic>
+                <gz_frame_id>imu_sensor_R</gz_frame_id>
+                <imu>
+                    <angular_velocity>
+                        <x><noise type="gaussian"><mean>0.0</mean><stddev>0.002</stddev></noise></x>
+                        <y><noise type="gaussian"><mean>0.0</mean><stddev>0.002</stddev></noise></y>
+                        <z><noise type="gaussian"><mean>0.0</mean><stddev>0.002</stddev></noise></z>
+                    </angular_velocity>
+                    <linear_acceleration>
+                        <x><noise type="gaussian"><mean>0.0</mean><stddev>0.02</stddev></noise></x>
+                        <y><noise type="gaussian"><mean>0.0</mean><stddev>0.02</stddev></noise></y>
+                        <z><noise type="gaussian"><mean>0.0</mean><stddev>0.02</stddev></noise></z>
+                    </linear_acceleration>
+                </imu>
+            </sensor>
         </gazebo>
 
         <gazebo reference="laser_frame">

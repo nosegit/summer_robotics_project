@@ -15,6 +15,7 @@ from launch.substitutions import LaunchConfiguration, PythonExpression
 def generate_launch_description():
     navigation_share = get_package_share_directory('my_robot_navigation')
     simulation_share = get_package_share_directory('my_robot_sim')
+    localization_share = get_package_share_directory('my_robot_localization')
     nav2_share = get_package_share_directory('nav2_bringup')
 
     mode = LaunchConfiguration('mode')
@@ -27,6 +28,13 @@ def generate_launch_description():
             os.path.join(simulation_share, 'launch', 'gazebo.launch.py')
         ),
         launch_arguments={'headless': headless}.items(),
+    )
+
+    localization = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(localization_share, 'launch', 'localization.launch.py')
+        ),
+        launch_arguments={'use_sim_time': 'true'}.items(),
     )
 
     nav2 = IncludeLaunchDescription(
@@ -60,5 +68,6 @@ def generate_launch_description():
             default_value=os.path.join(navigation_share, 'config', 'nav2_params_sim.yaml'),
         ),
         gazebo,
+        localization,
         nav2,
     ])

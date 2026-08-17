@@ -4,8 +4,8 @@
 
 amcl:
   ros__parameters:
-    use_sim_time: true
-    transform_tolerance: 1.0
+    iuse_sim_time: true
+    transform_tolerance: 0.3
     alpha1: 0.2
     alpha2: 0.2
     alpha3: 0.2
@@ -15,13 +15,20 @@ amcl:
     global_frame_id: "map"
     odom_frame_id: "odom"
     scan_topic: "scan"
+    laser_min_range: 0.15
+    laser_max_range: 12.0
+    max_beams: 90
+    # Update localization after about 1.1 degrees or 5 cm instead of waiting
+    # for the Nav2 defaults of 11.5 degrees or 25 cm.
+    update_min_a: 0.02
+    update_min_d: 0.05
     set_initial_pose: true
     initial_pose: [0.0, 0.0, 0.0, 0.0]
     robot_model_type: "nav2_amcl::OmniMotionModel"
 
 bt_navigator:
   ros__parameters:
-    use_sim_time: true
+    iuse_sim_time: true
     global_frame: map
     robot_base_frame: base_link
     odom_topic: /odom
@@ -37,11 +44,11 @@ bt_navigator:
 
 controller_server:
   ros__parameters:
-    use_sim_time: true
-    controller_frequency: 20.0 # 20.0
-    min_x_velocity_threshold: 0.001
-    min_y_velocity_threshold: 0.001
-    min_theta_velocity_threshold: 0.001
+    iuse_sim_time: true
+    controller_frequency: 10.0 # 20.0
+    min_x_velocity_threshold: 0.05
+    min_y_velocity_threshold: 0.05
+    min_theta_velocity_threshold: 0.15
     failure_tolerance: 0.3
     progress_checker_plugin: "progress_checker"
     goal_checker_plugins: ["general_goal_checker"]
@@ -64,22 +71,30 @@ controller_server:
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: true
-      min_vel_x: -0.5
-      max_vel_x: 0.5
-      min_vel_y: -0.5      # Enabled for Mecanum (Lateral movements)
-      max_vel_y: 0.5       # Enabled for Mecanum (Lateral movements)
-      max_vel_theta: 1.0
+      
+      # Linear Velocities (Matched for 7Hz scan time)
+      min_vel_x: -0.3
+      max_vel_x: 0.3
+      min_vel_y: -0.3      
+      max_vel_y: 0.3       
+      max_speed_xy: 0.3      
       min_speed_xy: 0.0
-      max_speed_xy: 0.5
-      min_speed_theta: 0.0
-      acc_lim_x: 2.5
-      acc_lim_y: 2.5        # Lateral acceleration limit
-      acc_lim_theta: 3.2
-      decel_lim_x: -2.5
-      decel_lim_y: -2.5
-      decel_lim_theta: -3.2
+
+      # Rotational Velocities (Matched to prevent Scan Skew)
+      min_speed_theta: 0.15
+      max_vel_theta: 0.3
+
+      # Accelerations (Matched to prevent Mecanum wheel slip)
+      acc_lim_x: 1.0         
+      acc_lim_y: 1.0         
+      acc_lim_theta: 0.8     
+      decel_lim_x: -1.0      
+      decel_lim_y: -1.0      
+      decel_lim_theta: -0.8  
+
+      # Sampling Space
       vx_samples: 20
-      vy_samples: 20        # Sample lateral speeds
+      vy_samples: 20        
       vtheta_samples: 20
       # Basic DWB Critics
       # critics: ["ObstacleFootprint", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
@@ -97,7 +112,7 @@ controller_server:
       # --- Critic Weights ---
       PathDist.scale: 32.0       # Pulls the trajectory toward the path line
       GoalDist.scale: 24.0       # Drives forward toward goal
-      BaseObstacle.scale: 4.0    # Balanced so it doesn't freak out near gap walls
+      BaseObstacle.scale: 2.0    # Balanced so it doesn't freak out near gap walls
       
       # --- Aim Toward Path Alignment Settings ---
       PathAlign.scale: 16.0      # Penalizes trajectories not heading parallel to path
@@ -141,18 +156,18 @@ controller_server:
 
 planner_server:
   ros__parameters:
-    expected_planner_frequency: 20.0
-    use_sim_time: true
+    expected_planner_frequency: 5.0
+    iuse_sim_time: true
     planner_plugins: ["GridBased"]
     GridBased:
-      plugin: "nav2_navfn_planner::NavfnPlanner" # <--- Fixed with double colons!
+      plugin: "nav2_navfn_planner::NavfnPlanner"
       tolerance: 0.5
       use_astar: false
       allow_unknown: true
 
 behavior_server:
   ros__parameters:
-    use_sim_time: true
+    iuse_sim_time: true
     costmap_topic: local_costmap/costmap_raw
     footprint_topic: local_costmap/published_footprint
     cycle_frequency: 10.0
@@ -182,11 +197,11 @@ global_costmap:
       publish_frequency: 1.0
       global_frame: map
       robot_base_frame: base_link
-      use_sim_time: true
+      iuse_sim_time: true
       resolution: 0.05
       # robot_radius: 0.30   # Replace with your actual physical robot radius in meters
       footprint: "[ [0.175, 0.18], [0.175, -0.18], [-0.175, -0.18], [-0.175, 0.18] ]"
-      footprint_padding: 0.03 # 3cm padding
+      footprint_padding: 0.05 # 5cm padding
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
       
       static_layer:
@@ -208,24 +223,24 @@ global_costmap:
       
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 3.0
-        inflation_radius: 0.5
+        cost_scaling_factor: 10.0
+        inflation_radius: 0.45
 
 local_costmap:
   local_costmap:
     ros__parameters:
-      update_frequency: 5.0
-      publish_frequency: 2.0
+      update_frequency: 10.0
+      publish_frequency: 10.0
       global_frame: odom
       robot_base_frame: base_link
-      use_sim_time: true
+      iuse_sim_time: true
       rolling_window: true
       width: 3
       height: 3
       resolution: 0.05
       # robot_radius: 0.30   # Replace with your actual physical robot radius in meters
       footprint: "[ [0.175, 0.18], [0.175, -0.18], [-0.175, -0.18], [-0.175, 0.18] ]"
-      footprint_padding: 0.03 # 3cm padding
+      footprint_padding: 0.05 # 5cm padding
       plugins: ["obstacle_layer", "inflation_layer"]
       
       obstacle_layer:
@@ -243,12 +258,12 @@ local_costmap:
       
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 5.0
-        inflation_radius: 0.5
+        cost_scaling_factor: 30.0
+        inflation_radius: 0.45
 
 collision_monitor:
   ros__parameters:
-    use_sim_time: true
+    iuse_sim_time: true
     cmd_vel_in_topic: "cmd_vel_smoothed"
     cmd_vel_out_topic: "cmd_vel"
     update_frequency: 10.0
@@ -286,9 +301,7 @@ collision_monitor:
       type: "polygon"
       action_type: "approach"
       footprint_topic: "local_costmap/published_footprint"
-      # Maintain approximately this much time before a predicted collision.
       time_before_collision: 2.0
-      # Smaller values improve prediction accuracy.
       simulation_time_step: 0.05
       min_points: 4
       visualize: true
@@ -297,8 +310,8 @@ collision_monitor:
 
 docking_server:
   ros__parameters:
-    use_sim_time: true
-    controller_frequency: 50.0
+    iuse_sim_time: true
+    controller_frequency: 10.0
     initial_perception_timeout: 5.0
     wait_charge_timeout: 5.0
     dock_approach_timeout: 30.0
@@ -319,21 +332,29 @@ docking_server:
 
 slam_toolbox:
   ros__parameters:
-    use_sim_time: true
+    iuse_sim_time: true
     odom_frame: "odom"
     base_frame: "base_link"
     scan_topic: "/scan"
     mode: "mapping"
-  # Correct Map Expansion Parameters
+    # RPLIDAR A1: 0.15-12 m range, measured at about 7.6 scans/s.
+    throttle_scans: 1
+    scan_queue_size: 1
+    restamp_tf: false
+    map_update_interval: 1.0
     resolution: 0.05
-    max_laser_range: 10.0            # Adjust based on your lidar's max range
-    minimum_time_interval: 0.5       # Update the map every 0.5 seconds
-    minimum_travel_distance: 0.1     # Expand the map every 10 centimeters! (Fixes the out of bounds)
-    minimum_travel_heading: 0.1      # Expand the map when rotating
-    # Internal Solver Parameters
-    transform_timeout: 0.5
+    min_laser_range: 0.15
+    max_laser_range: 12.0
+    # The A1 currently publishes at about 7.6 Hz (one scan every 0.13 s).
+    # Process each available scan instead of throttling SLAM to 2 Hz.
+    minimum_time_interval: 0.1
+    minimum_travel_distance: 0.05
+    minimum_travel_heading: 0.02
+    check_min_dist_and_heading_precisely: false
+    use_scan_matching: true
+    transform_timeout: 0.2
     tf_buffer_duration: 30.0
-    transform_publish_period: 0.05
+    transform_publish_period: 0.02
 
 velocity_smoother:
   ros__parameters:
@@ -341,18 +362,18 @@ velocity_smoother:
     # Smooth them first, then let collision_monitor be the sole /cmd_vel publisher.
     input_topic: "cmd_vel_nav"
     output_topic: "cmd_vel_smoothed"
-    smoothing_frequency: 20.0
+    smoothing_frequency: 10.0
     scale_velocities: False
     feedback: "OPEN_LOOP"
     
     # FORMAT IS: [X, Y, THETA]
     # This is the magic unlock: Ensure the middle number (Y) matches your X limit!
-    max_velocity: [0.5, 0.5, 1.0]     
-    min_velocity: [-0.5, -0.5, -1.0]  
+    max_velocity: [0.3, 0.3, 0.3]     
+    min_velocity: [-0.3, -0.3, -0.3]  
     
     # You MUST also provide Y-axis acceleration limits, or it will refuse to slide
-    max_accel: [2.5, 2.5, 3.2]
-    max_decel: [-2.5, -2.5, -3.2]
+    max_accel: [1.2, 1.2, 1.0]
+    max_decel: [-1.2, -1.2, -1.0]
     
     deadband_velocity: [0.0, 0.0, 0.0]
     odom_topic: "odom"
@@ -363,7 +384,7 @@ velocity_smoother:
 # ==============================================================================
 lifecycle_manager_navigation:
   ros__parameters:
-    use_sim_time: true
+    iuse_sim_time: true
     autostart: true
     node_names: ['controller_server',
                 'velocity_smoother',
@@ -374,7 +395,7 @@ lifecycle_manager_navigation:
 
 lifecycle_manager_localization:
   ros__parameters:
-    use_sim_time: true
+    iuse_sim_time: true
     autostart: true
     node_names: ['amcl']
 
