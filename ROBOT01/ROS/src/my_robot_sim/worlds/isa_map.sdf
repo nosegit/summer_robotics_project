@@ -2,6 +2,19 @@
 <sdf version='1.10'>
   <world name='isa_map'>
 
+    <physics type="ode">
+      <!-- 0.002 step size = 500 Hz updates instead of 1000 Hz (cuts CPU load in half) -->
+      <max_step_size>0.002</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>500</real_time_update_rate>
+      <ode>
+        <solver>
+          <type>quick</type>
+          <iters>20</iters>
+        </solver>
+      </ode>
+    </physics>
+
     <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
     <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
     <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
@@ -42,7 +55,7 @@
     <!-- Sun -->
     <light name='sun' type='directional'>
       <pose>0 0 10 0 0 0</pose>
-      <cast_shadows>true</cast_shadows>
+      <cast_shadows>false</cast_shadows>
       <intensity>1</intensity>
       <direction>-0.5 0.1 -0.9</direction>
       <diffuse>0.8 0.8 0.8 1</diffuse>
@@ -104,7 +117,7 @@
 
       <link name="obstacle_1">
           <pose>-2.15 -1.5 0.25 0 0 1.5707</pose> 
-          <collision name="collision"><geometry><box><size>0.3 1.0 0.5</size></box></geometry></collision>
+          <collision name="collision"><geometry><box><size>1.0 0.3 0.5</size></box></geometry></collision>
           <visual name="visual">
               <geometry><box><size>1.0 0.3 0.5</size></box></geometry>
               <material><diffuse>0.5 0.0 0.0 1</diffuse></material>
@@ -113,7 +126,7 @@
       
       <link name="obstacle_2">
           <pose>-2.15 -3.0 0.25 0 0 1.5707</pose> 
-          <collision name="collision"><geometry><box><size>0.3 1.0 0.5</size></box></geometry></collision>
+          <collision name="collision"><geometry><box><size>1.0 0.3 0.5</size></box></geometry></collision>
           <visual name="visual">
               <geometry><box><size>1.0 0.3 0.5</size></box></geometry>
               <material><diffuse>0.5 0.0 0.0 1</diffuse></material>
@@ -122,7 +135,7 @@
 
       <link name="obstacle_3">
           <pose>-2.15 -5.0 0.25 0 0 1.5707</pose> 
-          <collision name="collision"><geometry><box><size>0.3 1.0 0.5</size></box></geometry></collision>
+          <collision name="collision"><geometry><box><size>1.0 0.3 0.5</size></box></geometry></collision>
           <visual name="visual">
               <geometry><box><size>1.0 0.3 0.5</size></box></geometry>
               <material><diffuse>0.5 0.0 0.0 1</diffuse></material>
@@ -131,7 +144,7 @@
 
       <link name="obstacle_4">
           <pose>-2.15 -6.5 0.25 0 0 1.5707</pose> 
-          <collision name="collision"><geometry><box><size>0.3 1.0 0.5</size></box></geometry></collision>
+          <collision name="collision"><geometry><box><size>1.0 0.3 0.5</size></box></geometry></collision>
           <visual name="visual">
               <geometry><box><size>1.0 0.3 0.5</size></box></geometry>
               <material><diffuse>0.5 0.0 0.0 1</diffuse></material>
@@ -139,25 +152,25 @@
       </link>
 
       <link name="pickup_location_1">
-        <pose>-6 -2.25 0.005 0 0 0</pose> 
+        <pose>-6 -2.25 0.0005 0 0 0</pose> 
         <visual name="visual">
-          <geometry><box><size>0.2 1.5 0.01</size></box></geometry>
+          <geometry><box><size>0.2 1.5 0.001</size></box></geometry>
           <material><diffuse>0.0 1.0 0.0 1.0</diffuse></material>
         </visual>
       </link>
 
       <link name="pickup_location_2">
-        <pose>-6 -5.75 0.005 0 0 0</pose> 
+        <pose>-6 -5.75 0.0005 0 0 0</pose> 
         <visual name="visual">
-          <geometry><box><size>0.2 1.5 0.01</size></box></geometry>
+          <geometry><box><size>0.2 1.5 0.001</size></box></geometry>
           <material><diffuse>0.0 1.0 0.0 1.0</diffuse></material>
         </visual>
       </link>
 
       <link name="Recipe_location">
-        <pose>4 -9.5 0.005 0 0 0</pose> 
+        <pose>4 -9.5 0.0005 0 0 0</pose> 
         <visual name="visual">
-          <geometry><box><size>1.0 1.0 0.01</size></box></geometry>
+          <geometry><box><size>1.0 1.0 0.001</size></box></geometry>
           <material><diffuse>0.0 1.0 0.0 1.0</diffuse></material>
         </visual>
       </link>

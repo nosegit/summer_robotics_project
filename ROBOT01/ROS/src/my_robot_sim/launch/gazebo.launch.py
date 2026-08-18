@@ -1,10 +1,9 @@
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, ExecuteProcess
 from launch.conditions import IfCondition, UnlessCondition
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, Command, PythonExpression
+from launch.substitutions import LaunchConfiguration, Command
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 
@@ -12,7 +11,6 @@ def generate_launch_description():
     pkg_sim_path = get_package_share_directory('my_robot_sim')
     pkg_description_path = get_package_share_directory('my_robot_description')
 
-    # world_file = os.path.join(pkg_sim_path, 'worlds', 'simple_room.sdf')
     world_file = os.path.join(pkg_sim_path, 'worlds', 'isa_map.sdf')
     xacro_file = os.path.join(pkg_description_path, 'urdf', 'mecanum_robot.urdf.xacro')
 
@@ -46,18 +44,21 @@ def generate_launch_description():
         }]
     )
 
-    # 2. Include Gazebo Sim Launch (Headless Server vs GUI Server)
-    # When headless=true -> runs: gz sim -r -s --headless-rendering <world>
-    # When headless=false -> runs: gz sim -r <world>
-    gz_args = PythonExpression([
-        "'-r -s --headless-rendering ", world_file, "' if '", headless, "' == 'true' else '-r ", world_file, "'"
-    ])
+    # 2. Launch Gazebo directly via ExecuteProcess to allow timeout variables
+    # Headless Mode (headless=true)
+    gazebo_sim_headless = ExecuteProcess(
+        condition=IfCondition(headless),
+        cmd=['gz', 'sim', '-r', '-s', '--headless-rendering', world_file],
+        output='screen',
+        sigterm_timeout='15.0'  # Gives Gazebo 15 seconds to shut down gracefully before sending SIGTERM
+    )
 
-    gazebo_sim = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py')
-        ),
-        launch_arguments={'gz_args': gz_args}.items()
+    # GUI Mode (headless=false)
+    gazebo_sim_gui = ExecuteProcess(
+        condition=UnlessCondition(headless),
+        cmd=['gz', 'sim', '-r', world_file],
+        output='screen',
+        sigterm_timeout='15.0'  # Gives Gazebo 15 seconds to shut down gracefully before sending SIGTERM
     )
 
     # 3. Spawn Robot in Gazebo World
@@ -100,7 +101,8 @@ def generate_launch_description():
         declare_robot_y_arg,
         declare_robot_yaw_arg,
         node_robot_state_publisher,
-        gazebo_sim,
+        gazebo_sim_headless,
+        gazebo_sim_gui,
         node_spawn_robot,
         node_ros_gz_bridge
     ])
