@@ -3,7 +3,7 @@ parcel_acquisition_manager:
     cmd_vel_topic: /cmd_vel
     cube_detections_topic: /aruco/cubes
     base_frame: base_link
-    detection_timeout: 0.5
+    detection_timeout: 2.0
     search_speed: 0.08
     search_timeout: 180.0
     search_center_kp: 0.5
