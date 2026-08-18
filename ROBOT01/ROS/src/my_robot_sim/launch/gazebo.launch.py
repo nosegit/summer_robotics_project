@@ -17,12 +17,18 @@ def generate_launch_description():
     xacro_file = os.path.join(pkg_description_path, 'urdf', 'mecanum_robot.urdf.xacro')
 
     headless = LaunchConfiguration('headless')
+    robot_x = LaunchConfiguration('robot_x')
+    robot_y = LaunchConfiguration('robot_y')
+    robot_yaw = LaunchConfiguration('robot_yaw')
 
     declare_headless_arg = DeclareLaunchArgument(
         'headless',
         default_value='true',
         description='Run Gazebo Sim in server-only headless mode (-s --headless-rendering)'
     )
+    declare_robot_x_arg = DeclareLaunchArgument('robot_x', default_value='-1.0')
+    declare_robot_y_arg = DeclareLaunchArgument('robot_y', default_value='-1.0')
+    declare_robot_yaw_arg = DeclareLaunchArgument('robot_yaw', default_value='0.0')
 
     # Process Xacro with simulation plugins enabled
     robot_description = ParameterValue(
@@ -62,9 +68,10 @@ def generate_launch_description():
         arguments=[
             '-topic', 'robot_description',
             '-name', 'mecanum_robot',
-            '-x', '-1.0',
-            '-y', '-1.0',
-            '-z', '0.05'
+            '-x', robot_x,
+            '-y', robot_y,
+            '-z', '0.05',
+            '-Y', robot_yaw
         ]
     )
 
@@ -89,6 +96,9 @@ def generate_launch_description():
 
     return LaunchDescription([
         declare_headless_arg,
+        declare_robot_x_arg,
+        declare_robot_y_arg,
+        declare_robot_yaw_arg,
         node_robot_state_publisher,
         gazebo_sim,
         node_spawn_robot,

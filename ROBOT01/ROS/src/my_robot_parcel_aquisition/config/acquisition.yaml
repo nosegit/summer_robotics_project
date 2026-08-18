@@ -1,0 +1,22 @@
+parcel_acquisition_manager:
+  ros__parameters:
+    cmd_vel_topic: /cmd_vel
+    cube_detections_topic: /aruco/cubes
+    base_frame: base_link
+    detection_timeout: 0.5
+    search_speed: 0.08
+    search_timeout: 30.0
+    servo_rate: 20.0
+    servo_timeout: 20.0
+    target_x: 0.0
+    target_y: 0.20
+    target_yaw: -1.57079632679
+    kp_x: 0.8
+    kp_y: 0.8
+    kp_yaw: 1.0
+    position_tolerance: 0.01
+    yaw_tolerance: 0.03
+    settle_cycles: 5
+    max_linear_velocity: 0.15
+    max_angular_velocity: 0.5
+    rotate_speed: 0.3

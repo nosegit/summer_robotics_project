@@ -79,4 +79,30 @@ ros2 launch my_robot_vision aruco_pose_estimator.launch.py marker_size:=0.05 dic
 **Outputs:**
 
 * **Topic (`/aruco/detections`)**: A `vision_msgs/msg/Detection3DArray`. The specific tag ID is stored in the `results[0].hypothesis.class_id` field.
-* **TF2 Tree**: Dynamically broadcasts individual frames for each visible tag (e.g., `aruco_marker_1`, `aruco_marker_42`) relative to the `camera_optical_frame`.
+* **Topic (`/aruco/cubes`)**: A `my_robot_vision/msg/CubeDetectionArray` containing one fused cube-centre pose, horizontal face normal, ID, and visible-face count per parcel.
+* **TF2 Tree**: Broadcasts unique raw face frames such as `aruco_marker_1_face_0` and a fused `cube_1` frame relative to the camera optical frame.
+
+Debug images are disabled by default. With `debug_image:=false`, the node does
+not create or publish either image topic. Enable them with:
+
+```bash
+ros2 launch my_robot_vision aruco_pose_estimator.launch.py debug_image:=true marker_size:=0.09 dictionary_name:=DICT_4X4_250
+```
+
+* `/aruco/image_detected` shows marker outlines and face axes.
+* `/aruco/image_cube` shows fused cube centres, IDs, and centre-frame axes.
+
+Cube-centre positions use outlier rejection followed by EMA smoothing by
+default. The filtered position is shared by `/aruco/cubes`, `cube_<id>`, the
+cube debug image, and parcel servoing. Example tuning:
+
+```bash
+ros2 launch my_robot_vision aruco_pose_estimator.launch.py \
+  position_filter_enabled:=true \
+  position_filter_alpha:=0.25 \
+  position_outlier_threshold:=0.04 \
+  position_filter_reset_timeout:=0.5
+```
+
+Lower `position_filter_alpha` for more smoothing or raise it for less control
+lag. Set `position_outlier_threshold:=0.0` to disable only jump rejection.

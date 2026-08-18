@@ -1,0 +1,4 @@
+#!/usr/bin/env python3
+from my_robot_vision.convert_npz_to_camera_info_yaml import main
+if __name__ == '__main__':
+    main()

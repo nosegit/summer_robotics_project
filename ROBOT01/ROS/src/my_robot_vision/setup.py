@@ -28,7 +28,7 @@ setup(
             'rtp_camera_publisher = my_robot_vision.rtp_camera_publisher:main',
             'convert_camera_calibration = '
             'my_robot_vision.convert_npz_to_camera_info_yaml:main',
-            'aruco_pose_estimator = my_robot_vision.aruco_pose_estimator:main',  # Added ArUco executable
+            'aruco_pose_estimator = my_robot_vision.aruco_pose.node:main',
         ],
     },
 )
