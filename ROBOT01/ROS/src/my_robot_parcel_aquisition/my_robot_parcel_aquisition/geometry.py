@@ -5,6 +5,13 @@ def wrap_angle(angle):
     return math.atan2(math.sin(angle), math.cos(angle))
 
 
+def parallel_yaw_error(observed_yaw, target_yaw):
+    """Return the shortest error when an axis and its inverse are equivalent."""
+    directed_error = wrap_angle(observed_yaw - target_yaw)
+    inverted_error = wrap_angle(observed_yaw + math.pi - target_yaw)
+    return min((directed_error, inverted_error), key=abs)
+
+
 def quaternion_multiply(a, b):
     ax, ay, az, aw = a
     bx, by, bz, bw = b

@@ -1,3 +1,4 @@
+import math
 import time
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from my_robot_parcel_aquisition.action import SearchParcel
@@ -27,22 +28,60 @@ class SearchAction:
             handle.abort()
             return result
         started = time.monotonic()
+        parcel_seen = False
+        last_seen_time = None
+        centered_cycles = 0
         try:
             timeout = float(self.manager.get_parameter('search_timeout').value)
             speed = float(self.manager.get_parameter('search_speed').value)
+            center_kp = float(
+                self.manager.get_parameter('search_center_kp').value
+            )
+            center_tolerance = float(
+                self.manager.get_parameter('search_center_tolerance').value
+            )
+            required_cycles = int(
+                self.manager.get_parameter('search_center_settle_cycles').value
+            )
+            reacquire_timeout = float(
+                self.manager.get_parameter('search_reacquire_timeout').value
+            )
             while time.monotonic() - started < timeout:
                 if handle.is_cancel_requested:
                     result.message = 'Search cancelled'
                     handle.canceled()
                     return result
-                if self.manager.get_detection(handle.request.marker_id) is not None:
-                    result.success = True
-                    result.message = 'Parcel detected'
-                    handle.succeed()
-                    return result
-                self.manager.publish_velocity(vx=speed)
+                item = self.manager.get_detection(handle.request.marker_id)
+                if item is None:
+                    if parcel_seen:
+                        self.manager.stop()
+                        centered_cycles = 0
+                        if time.monotonic() - last_seen_time > reacquire_timeout:
+                            result.message = 'Parcel was lost while centering'
+                            handle.abort()
+                            return result
+                    else:
+                        self.manager.publish_velocity(vx=speed)
+                    detected = False
+                else:
+                    parcel_seen = True
+                    last_seen_time = time.monotonic()
+                    detection, _header, _received = item
+                    position = detection.pose.position
+                    horizontal_error = math.atan2(position.x, position.z)
+                    centered = abs(horizontal_error) <= center_tolerance
+                    centered_cycles = centered_cycles + 1 if centered else 0
+                    if centered_cycles >= required_cycles:
+                        result.success = True
+                        result.message = 'Parcel centered in camera image'
+                        handle.succeed()
+                        return result
+                    center_velocity = 0.0 if centered else center_kp * horizontal_error
+                    center_velocity = max(-speed, min(speed, center_velocity))
+                    self.manager.publish_velocity(vx=center_velocity)
+                    detected = True
                 feedback = SearchParcel.Feedback()
-                feedback.detected = False
+                feedback.detected = detected
                 feedback.elapsed_time = float(time.monotonic() - started)
                 handle.publish_feedback(feedback)
                 time.sleep(0.05)

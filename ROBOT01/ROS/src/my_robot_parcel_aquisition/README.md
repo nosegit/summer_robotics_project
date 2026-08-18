@@ -28,10 +28,25 @@ ros2 action send_goal /servo_parcel my_robot_parcel_aquisition/action/ServoParce
 ros2 action send_goal /rotate_blind my_robot_parcel_aquisition/action/RotateBlind "{angle: -1.5708}" --feedback
 ```
 
+`SearchParcel` first drives forward until the requested parcel becomes visible,
+then moves forward or backward until the parcel is near the horizontal centre
+of the camera image. It succeeds after three consecutive centred observations.
+The centering behavior is configured with `search_center_kp`,
+`search_center_tolerance` (radians), and `search_center_settle_cycles`.
+If the marker briefly disappears while visibility changes between cube faces,
+the robot stops and waits up to `search_reacquire_timeout` seconds for the same
+cube ID before aborting. The default is 2 seconds.
+
 Or run all three stages:
 
 ```bash
 ros2 run my_robot_parcel_aquisition acquisition_sequencer --marker-id 2 --angle -1.5708
+```
+
+Add `--feedback` to print live feedback from every stage:
+
+```bash
+ros2 run my_robot_parcel_aquisition acquisition_sequencer --marker-id 2 --angle 1.5708 --feedback
 ```
 
 ## Nav2 integration
@@ -41,4 +56,32 @@ acquisition input of the robot's velocity arbiter; `/cmd_vel_acquisition` is the
 recommended integrated name. The standalone default is `/cmd_vel`. Never allow
 Nav2 and acquisition to publish to the same unarbitrated input simultaneously.
 
-Blind rotation is approximate and requires calibration on the real floor.
+Rotation goals use radians and are tracked from the configured odometry topic.
+Positive angles rotate counter-clockwise and negative angles rotate clockwise.
+The simulation default is `/odometry/wheel`; set `odometry_topic` to the
+hardware or filtered odometry topic when running on the real robot.
+
+## Change manager parameters
+
+Set parameters before sending the next action goal:
+
+```bash
+ros2 param set /parcel_acquisition_manager target_x 0.0
+ros2 param set /parcel_acquisition_manager target_y 0.35
+ros2 param set /parcel_acquisition_manager target_yaw -1.5708
+ros2 param set /parcel_acquisition_manager kp_x 0.8
+ros2 param set /parcel_acquisition_manager kp_y 1.0
+ros2 param set /parcel_acquisition_manager kp_yaw 1.0
+ros2 param set /parcel_acquisition_manager max_linear_velocity 0.15
+ros2 param set /parcel_acquisition_manager max_angular_velocity 0.5
+```
+
+Inspect one value or dump all manager parameters:
+
+```bash
+ros2 param get /parcel_acquisition_manager target_y
+ros2 param dump /parcel_acquisition_manager
+```
+
+Changes made with `ros2 param set` are temporary. Update
+`config/acquisition.yaml` to keep tuned values after restarting the node.

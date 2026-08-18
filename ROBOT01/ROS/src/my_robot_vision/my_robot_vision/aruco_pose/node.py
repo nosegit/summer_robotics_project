@@ -75,6 +75,7 @@ class ArucoPoseEstimator(Node):
         self.tf_broadcaster = TransformBroadcaster(self)
         self.camera_matrix = None
         self.distortion = None
+        self.camera_info_warning_emitted = False
         self._create_detector(dictionary_name)
 
         self.create_subscription(
@@ -126,7 +127,9 @@ class ArucoPoseEstimator(Node):
 
     def _image_callback(self, msg):
         if self.camera_matrix is None or self.distortion is None:
-            self.get_logger().warn_once('Waiting for CameraInfo...')
+            if not self.camera_info_warning_emitted:
+                self.get_logger().warning('Waiting for CameraInfo...')
+                self.camera_info_warning_emitted = True
             return
         marker_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         cube_image = marker_image.copy() if self.debug_image else None

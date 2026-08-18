@@ -1,8 +1,9 @@
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
 
 
 def include(package, launch_file, arguments=None):
@@ -12,13 +13,18 @@ def include(package, launch_file, arguments=None):
 
 def generate_launch_description():
     return LaunchDescription([
+        DeclareLaunchArgument('debug_image', default_value='true'),
         include('my_robot_sim', 'gazebo.launch.py', {
-            'headless': 'true', 'robot_x': '-5.55', 'robot_y': '-3.25',
+            'robot_x': '-5.55', 'robot_y': '-3.25',
             'robot_yaw': '1.5708',
         }),
         include('my_robot_vision', 'aruco_pose_estimator.launch.py', {
             'marker_size': '0.09', 'dictionary_name': 'DICT_4X4_250',
-            'cube_size': '0.10',
+            'cube_size': '0.10', 
+            'position_filter_enabled': 'true', 'position_filter_alpha': '1.0', 'position_outlier_threshold': '0.1',
+            # 'debug_image': 'true',
+            'debug_image': LaunchConfiguration('debug_image'),
+
         }),
         include('my_robot_parcel_aquisition', 'acquisition.launch.py', {'use_sim_time': 'true', 'cmd_vel_topic': '/cmd_vel'}),
     ])

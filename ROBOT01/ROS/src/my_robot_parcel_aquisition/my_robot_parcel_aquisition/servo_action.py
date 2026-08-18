@@ -3,7 +3,11 @@ import time
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.time import Time
 from my_robot_parcel_aquisition.action import ServoParcel
-from my_robot_parcel_aquisition.geometry import desaturate, transform_detection, wrap_angle
+from my_robot_parcel_aquisition.geometry import (
+    desaturate,
+    parallel_yaw_error,
+    transform_detection,
+)
 
 
 class ServoAction:
@@ -74,7 +78,8 @@ class ServoAction:
                 center, normal = transform_detection(detection, transform)
                 x_error = center[0] - target_x
                 y_error = center[1] - target_y
-                yaw_error = wrap_angle(math.atan2(normal[1], normal[0]) - target_yaw)
+                face_yaw = math.atan2(normal[1], normal[0])
+                yaw_error = parallel_yaw_error(face_yaw, target_yaw)
                 vx = float(self.manager.get_parameter('kp_x').value) * x_error
                 vy = float(self.manager.get_parameter('kp_y').value) * y_error
                 wz = float(self.manager.get_parameter('kp_yaw').value) * yaw_error
