@@ -8,4 +8,9 @@ install(
   DESTINATION share/${PROJECT_NAME}
 )
 
+install(
+  PROGRAMS scripts/cmd_vel_arbiter
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 ament_package()

@@ -13,6 +13,20 @@ Start simulation with the saved map and Nav2:
 ros2 launch my_robot_bringup simulation.launch.py mode:=localization
 ```
 
+This launch also starts parcel vision and acquisition by default. Nav2 writes
+to `/cmd_vel_navigation`, parcel acquisition writes to
+`/cmd_vel_acquisition`, and the priority arbiter is the only publisher to
+`/cmd_vel`. A fresh acquisition command overrides navigation; stale inputs are
+stopped automatically. Cancel or pause an active Nav2 goal before starting an
+acquisition action so that navigation does not resume when acquisition ends.
+
+Disable the parcel nodes, or enable vision debug images, with:
+
+```bash
+ros2 launch my_robot_bringup simulation.launch.py parcel_acquisition:=false
+ros2 launch my_robot_bringup simulation.launch.py debug_image:=true
+```
+
 To create a map, start SLAM and save it after driving the robot:
 
 ```bash
