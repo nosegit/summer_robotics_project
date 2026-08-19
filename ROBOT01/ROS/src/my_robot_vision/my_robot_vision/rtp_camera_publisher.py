@@ -13,6 +13,7 @@ import numpy as np
 import rclpy
 from cv_bridge import CvBridge
 from rclpy.node import Node
+from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import CameraInfo, Image
 
 gi.require_version('Gst', '1.0')
@@ -29,17 +30,28 @@ class RtpCameraPublisher(Node):
         self.declare_parameter('height', 480)
         self.declare_parameter('camera_info_url', '')
         self.declare_parameter('frame_id', 'camera_optical_frame')
+        self.declare_parameter('rotate_180', False)
 
         self.port = self.get_parameter('port').value
         self.width = self.get_parameter('width').value
         self.height = self.get_parameter('height').value
         self.frame_id = self.get_parameter('frame_id').value
+        self.rotate_180 = bool(self.get_parameter('rotate_180').value)
         if not 1 <= self.port <= 65535:
             raise ValueError('port must be between 1 and 65535')
 
         self.bridge = CvBridge()
-        self.image_publisher = self.create_publisher(Image, 'camera/image_raw', 10)
-        self.info_publisher = self.create_publisher(CameraInfo, 'camera/camera_info', 10)
+        sensor_qos = QoSProfile(
+            history=HistoryPolicy.KEEP_LAST,
+            depth=1,
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+        )
+        self.image_publisher = self.create_publisher(
+            Image, 'camera/image_raw', sensor_qos
+        )
+        self.info_publisher = self.create_publisher(
+            CameraInfo, 'camera/camera_info', sensor_qos
+        )
         self.camera_info = self._load_camera_info(
             self.get_parameter('camera_info_url').value
         )
@@ -54,7 +66,10 @@ class RtpCameraPublisher(Node):
             f'udpsrc port={self.port} buffer-size=524288 '
             'caps="application/x-rtp,media=video,encoding-name=H264,payload=96,clock-rate=90000" ! '
             'rtpjitterbuffer latency=0 drop-on-latency=true ! '
-            'rtph264depay ! h264parse ! avdec_h264 ! '
+            # Frame-threaded H.264 decoding improves throughput by buffering
+            # frames. One decoder thread is lower latency for this 640x480 feed.
+            'rtph264depay ! h264parse ! avdec_h264 max-threads=1 ! '
+            'queue max-size-buffers=1 max-size-bytes=0 max-size-time=0 leaky=downstream ! '
             'videoconvert n-threads=2 ! video/x-raw,format=BGR ! '
             'appsink name=framesink emit-signals=true sync=false max-buffers=1 drop=true'
         )
@@ -113,6 +128,10 @@ class RtpCameraPublisher(Node):
         try:
             # .copy() is vital here so we can unmap the GStreamer buffer immediately
             image_array = np.frombuffer(mapped.data, dtype=np.uint8).reshape((height, width, 3))
+            if self.rotate_180:
+                # The physical camera is mounted upside down. Flipping both
+                # image axes is exactly a 180-degree image-plane rotation.
+                image_array = image_array[::-1, ::-1]
             image = self.bridge.cv2_to_imgmsg(image_array.copy(), encoding='bgr8')
             image.header.stamp = self.get_clock().now().to_msg()
             image.header.frame_id = self.frame_id

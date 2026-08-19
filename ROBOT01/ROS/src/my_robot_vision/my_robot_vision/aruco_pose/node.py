@@ -8,6 +8,7 @@ import rclpy
 from cv_bridge import CvBridge
 from geometry_msgs.msg import TransformStamped
 from rclpy.node import Node
+from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import CameraInfo, Image
 from tf2_ros import TransformBroadcaster
 from vision_msgs.msg import Detection3D, Detection3DArray, ObjectHypothesisWithPose
@@ -78,10 +79,17 @@ class ArucoPoseEstimator(Node):
         self.camera_info_warning_emitted = False
         self._create_detector(dictionary_name)
 
-        self.create_subscription(
-            CameraInfo, camera_info_topic, self._camera_info_callback, 10
+        sensor_qos = QoSProfile(
+            history=HistoryPolicy.KEEP_LAST,
+            depth=1,
+            reliability=ReliabilityPolicy.BEST_EFFORT,
         )
-        self.create_subscription(Image, image_topic, self._image_callback, 10)
+        self.create_subscription(
+            CameraInfo, camera_info_topic, self._camera_info_callback, sensor_qos
+        )
+        self.create_subscription(
+            Image, image_topic, self._image_callback, sensor_qos
+        )
         self.detection_pub = self.create_publisher(
             Detection3DArray, 'aruco/detections', 10
         )
@@ -92,10 +100,10 @@ class ArucoPoseEstimator(Node):
         self.cube_debug_image_pub = None
         if self.debug_image:
             self.debug_image_pub = self.create_publisher(
-                Image, 'aruco/image_detected', 10
+                Image, 'aruco/image_detected', sensor_qos
             )
             self.cube_debug_image_pub = self.create_publisher(
-                Image, 'aruco/image_cube', 10
+                Image, 'aruco/image_cube', sensor_qos
             )
         self.get_logger().info(
             f'ArUco detector listening on {image_topic} using {dictionary_name}'

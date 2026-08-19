@@ -7,7 +7,11 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import (
+    DeclareLaunchArgument,
+    IncludeLaunchDescription,
+    SetLaunchConfiguration,
+)
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PythonExpression
@@ -93,6 +97,11 @@ def generate_launch_description():
         launch_arguments={
             'use_sim_time': 'true',
             'cmd_vel_topic': '/cmd_vel_acquisition',
+            'config_file': os.path.join(
+                get_package_share_directory('my_robot_parcel_aquisition'),
+                'config',
+                'acquisition_sim.yaml',
+            ),
         }.items(),
     )
 
@@ -104,6 +113,9 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        # Nav2's isolated component container can need longer than the launch
+        # default of five seconds to unload all components during shutdown.
+        SetLaunchConfiguration('sigterm_timeout', '15.0'),
         DeclareLaunchArgument(
             'mode', default_value='localization',
             description='Nav2 mode: mapping (SLAM) or localization (saved map).',

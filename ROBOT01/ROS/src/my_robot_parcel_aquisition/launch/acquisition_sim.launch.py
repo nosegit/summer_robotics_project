@@ -12,6 +12,11 @@ def include(package, launch_file, arguments=None):
 
 
 def generate_launch_description():
+    acquisition_sim_config = os.path.join(
+        get_package_share_directory('my_robot_parcel_aquisition'),
+        'config',
+        'acquisition_sim.yaml',
+    )
     return LaunchDescription([
         DeclareLaunchArgument('debug_image', default_value='true'),
         include('my_robot_sim', 'gazebo.launch.py', {
@@ -26,5 +31,9 @@ def generate_launch_description():
             'debug_image': LaunchConfiguration('debug_image'),
 
         }),
-        include('my_robot_parcel_aquisition', 'acquisition.launch.py', {'use_sim_time': 'true', 'cmd_vel_topic': '/cmd_vel'}),
+        include('my_robot_parcel_aquisition', 'acquisition.launch.py', {
+            'use_sim_time': 'true',
+            'cmd_vel_topic': '/cmd_vel',
+            'config_file': acquisition_sim_config,
+        }),
     ])

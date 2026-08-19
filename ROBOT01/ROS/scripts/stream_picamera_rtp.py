@@ -15,6 +15,7 @@ import sys
 import time
 
 try:
+    from libcamera import Transform
     from picamera2 import Picamera2
     from picamera2.encoders import H264Encoder
     from picamera2.outputs import Output
@@ -157,6 +158,9 @@ def main():
     configuration = camera.create_video_configuration(
         main={'size': (arguments.width, arguments.height), 'format': 'YUV420'},
         controls={'FrameDurationLimits': (frame_duration_us, frame_duration_us)},
+        # The CSI camera is physically upside down. Let libcamera's image
+        # pipeline rotate it before hardware H.264 encoding.
+        transform=Transform(hflip=True, vflip=True),
         buffer_count=2,
         queue=False,
     )

@@ -56,6 +56,13 @@ class CubeEstimator:
             previous_center, previous_measurement, _ = previous
             jump = np.linalg.norm(measurement - previous_measurement)
             if self.outlier_threshold > 0.0 and jump > self.outlier_threshold:
+                # Hold the filtered output for one observation, but remember
+                # the rejected measurement. If the next observation agrees
+                # with it, the filter can recover instead of comparing against
+                # the old pose and rejecting forever.
+                self.filtered_centers[marker_id] = (
+                    previous_center.copy(), measurement.copy(), now
+                )
                 return previous_center.copy()
             filtered = (
                 self.filter_alpha * measurement

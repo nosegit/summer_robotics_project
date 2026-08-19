@@ -11,9 +11,13 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('use_sim_time', default_value='false'),
         DeclareLaunchArgument('cmd_vel_topic', default_value='/cmd_vel'),
+        DeclareLaunchArgument(
+            'config_file', default_value=config,
+            description='Parcel acquisition parameter YAML.',
+        ),
         Node(
             package='my_robot_parcel_aquisition', executable='acquisition_main',
-            output='screen', parameters=[config, {
+            output='screen', parameters=[LaunchConfiguration('config_file'), {
                 'use_sim_time': LaunchConfiguration('use_sim_time'),
                 'cmd_vel_topic': LaunchConfiguration('cmd_vel_topic'),
             }],
