@@ -65,7 +65,7 @@ def generate_launch_description():
             description='Nav2 mode: mapping (SLAM) or localization (saved map).',
         ),
         DeclareLaunchArgument(
-            'map', default_value=os.path.join(navigation_share, 'maps', 'simple_room.yaml'),
+            'map', default_value=os.path.join(navigation_share, 'maps', 'isa_map.yaml'),
         ),
         DeclareLaunchArgument(
             'params_file', default_value=os.path.join(navigation_share, 'config', 'nav2_params.yaml'),

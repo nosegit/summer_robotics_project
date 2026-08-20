@@ -97,8 +97,8 @@ def generate_launch_description():
         ),
         condition=IfCondition(parcel_acquisition),
         launch_arguments={
-            'marker_size': '0.05',
-            'dictionary_name': 'DICT_5X5_250',
+            'marker_size': '0.07',
+            'dictionary_name': 'DICT_4X4_250',
             'cube_size': '0.10',
             'position_filter_enabled': 'true',
             'position_filter_alpha': '1.0',
@@ -136,7 +136,7 @@ def generate_launch_description():
             description='Nav2 mode: mapping (SLAM) or localization (saved map).',
         ),
         DeclareLaunchArgument(
-            'map', default_value=os.path.join(navigation_share, 'maps', 'simple_room.yaml'),
+            'map', default_value=os.path.join(navigation_share, 'maps', 'isa_map.yaml'),
         ),
         DeclareLaunchArgument(
             'params_file', default_value=os.path.join(navigation_share, 'config', 'nav2_params.yaml'),
