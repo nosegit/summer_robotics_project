@@ -80,9 +80,21 @@ class ServoAction:
                 y_error = center[1] - target_y
                 face_yaw = math.atan2(normal[1], normal[0])
                 yaw_error = parallel_yaw_error(face_yaw, target_yaw)
-                vx = float(self.manager.get_parameter('kp_x').value) * x_error
-                vy = float(self.manager.get_parameter('kp_y').value) * y_error
-                wz = float(self.manager.get_parameter('kp_yaw').value) * yaw_error
+                x_aligned = abs(x_error) <= pos_tol
+                y_aligned = abs(y_error) <= pos_tol
+                yaw_aligned = abs(yaw_error) <= yaw_tol
+                vx = (
+                    0.0 if x_aligned
+                    else float(self.manager.get_parameter('kp_x').value) * x_error
+                )
+                vy = (
+                    0.0 if y_aligned
+                    else float(self.manager.get_parameter('kp_y').value) * y_error
+                )
+                wz = (
+                    0.0 if yaw_aligned
+                    else float(self.manager.get_parameter('kp_yaw').value) * yaw_error
+                )
                 vx, vy, wz = desaturate(
                     vx, vy, wz,
                     float(self.manager.get_parameter('max_linear_velocity').value),
@@ -94,7 +106,7 @@ class ServoAction:
                 feedback.y_error = float(y_error)
                 feedback.yaw_error = float(yaw_error)
                 handle.publish_feedback(feedback)
-                aligned = abs(x_error) <= pos_tol and abs(y_error) <= pos_tol and abs(yaw_error) <= yaw_tol
+                aligned = x_aligned and y_aligned and yaw_aligned
                 settled = settled + 1 if aligned else 0
                 if settled >= required:
                     result.success = True
