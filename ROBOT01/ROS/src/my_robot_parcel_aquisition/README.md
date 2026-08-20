@@ -58,6 +58,10 @@ Nav2 and acquisition to publish to the same unarbitrated input simultaneously.
 
 Rotation goals use radians and are tracked from the configured odometry topic.
 Positive angles rotate counter-clockwise and negative angles rotate clockwise.
+After rotating, the robot drives forward by `rotate_forward_distance` metres,
+also measured from odometry. Set this parameter to `0.0` to disable that step.
+The configured initial value is 0.235 m, based on the current 0.5 m parcel
+offset and the centre of the 0.18 m gripper footprint; tune it on the robot.
 The simulation default is `/odometry/wheel`; set `odometry_topic` to the
 hardware or filtered odometry topic when running on the real robot.
 
@@ -74,6 +78,7 @@ ros2 param set /parcel_acquisition_manager kp_y 1.0
 ros2 param set /parcel_acquisition_manager kp_yaw 1.0
 ros2 param set /parcel_acquisition_manager max_linear_velocity 0.15
 ros2 param set /parcel_acquisition_manager max_angular_velocity 0.5
+ros2 param set /parcel_acquisition_manager rotate_forward_distance 0.235
 ```
 
 Inspect one value or dump all manager parameters:

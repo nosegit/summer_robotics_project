@@ -32,3 +32,6 @@ parcel_acquisition_manager:
     rotate_timeout: 120.0
     rotate_rate: 20.0
     rotate_settle_cycles: 3
+    # target_y - (chassis_length / 2 + gripper_box_length / 2)
+    # 0.5 - (0.35 / 2 + 0.18 / 2) = 0.235 m; use 0.0 to disable
+    rotate_forward_distance: 0.235

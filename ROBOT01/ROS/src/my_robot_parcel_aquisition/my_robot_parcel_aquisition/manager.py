@@ -30,6 +30,7 @@ class AcquisitionManager(Node):
             'rotate_kp': 1.0, 'rotate_min_speed': 0.08,
             'rotate_tolerance': 0.02, 'rotate_timeout': 20.0,
             'rotate_rate': 20.0, 'rotate_settle_cycles': 3,
+            'rotate_forward_distance': 0.0,
         }
         for name, value in defaults.items():
             self.declare_parameter(name, value)
@@ -54,22 +55,29 @@ class AcquisitionManager(Node):
         )
 
     def _odometry_callback(self, msg):
+        position = msg.pose.pose.position
         q = msg.pose.pose.orientation
         yaw = math.atan2(
             2.0 * (q.w * q.z + q.x * q.y),
             1.0 - 2.0 * (q.y * q.y + q.z * q.z),
         )
         with self._odometry_lock:
-            self._odometry = (yaw, time.monotonic())
+            self._odometry = (
+                float(position.x), float(position.y), yaw, time.monotonic()
+            )
 
-    def get_odometry_yaw(self):
+    def get_odometry_pose(self):
         with self._odometry_lock:
             odometry = self._odometry
         if odometry is None:
             return None
-        age = time.monotonic() - odometry[1]
+        age = time.monotonic() - odometry[3]
         timeout = float(self.get_parameter('odometry_timeout').value)
-        return odometry[0] if age <= timeout else None
+        return odometry[:3] if age <= timeout else None
+
+    def get_odometry_yaw(self):
+        pose = self.get_odometry_pose()
+        return pose[2] if pose is not None else None
 
     def _detections_callback(self, msg):
         received = time.monotonic()

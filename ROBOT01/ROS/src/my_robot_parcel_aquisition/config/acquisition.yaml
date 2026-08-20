@@ -13,11 +13,11 @@ parcel_acquisition_manager:
     servo_rate: 20.0
     servo_timeout: 60.0
     target_x: 0.0
-    target_y: 0.5
+    target_y: 0.55
     target_yaw: -1.57079632679
     kp_x: 0.6
     kp_y: 0.6 # 0.8
-    kp_yaw: 0.6
+    kp_yaw: 0.45
     position_tolerance: 0.01
     yaw_tolerance: 0.03
     settle_cycles: 5
@@ -26,9 +26,12 @@ parcel_acquisition_manager:
     rotate_speed: 0.3
     odometry_topic: /odom
     odometry_timeout: 2.0
-    rotate_kp: 1.25
-    rotate_min_speed: 0.15
+    rotate_kp: 1.0
+    rotate_min_speed: 0.03
     rotate_tolerance: 0.01
     rotate_timeout: 120.0
     rotate_rate: 20.0
     rotate_settle_cycles: 3
+    # target_y - (chassis_length / 2 + gripper_box_length / 2)
+    # 0.5 - (0.35 / 2 + 0.18 / 2) = 0.235 m; use 0.0 to disable
+    rotate_forward_distance: 0.285
