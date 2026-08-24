@@ -34,9 +34,9 @@
     <xacro:property name="camera_board_depth" value="0.0016"/>
     <xacro:property name="camera_mass" value="0.01"/>
     <xacro:property name="camera_update_rate" value="30"/>
-    <xacro:property name="camera_x_offset"   value="0.01"/>
-    <xacro:property name="camera_y_offset"   value="${ (chassis_width/2.0) - 0.01}"/>
-    <xacro:property name="camera_z_offset"   value="0.025"/>
+    <xacro:property name="camera_x_offset"   value="0.0205"/>
+    <xacro:property name="camera_y_offset"   value="${ (chassis_width/2.0) - 0.002}"/>
+    <xacro:property name="camera_z_offset"   value="0.01855"/>
 
 
 
