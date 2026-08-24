@@ -98,7 +98,7 @@ def generate_launch_description():
         condition=IfCondition(parcel_acquisition),
         launch_arguments={
             'marker_size': '0.07',
-            'dictionary_name': 'DICT_4X4_250',
+            'dictionary_name': 'DICT_4X4_50',
             'cube_size': '0.10',
             'position_filter_enabled': 'true',
             'position_filter_alpha': '1.0',

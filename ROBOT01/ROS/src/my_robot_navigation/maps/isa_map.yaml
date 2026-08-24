@@ -1,7 +1,8 @@
 image: isa_map.pgm
 mode: trinary
 resolution: 0.050
-origin: [-7.025, -10.670, 0]
+# origin: [-7.025, -10.670, 0]
+origin: [-8.025, -11.670, 0]
 negate: 0
 occupied_thresh: 0.65
 free_thresh: 0.196

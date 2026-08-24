@@ -41,7 +41,12 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(
             os.path.join(simulation_share, 'launch', 'gazebo.launch.py')
         ),
-        launch_arguments={'headless': headless}.items(),
+        launch_arguments={
+            'headless': headless,
+            'robot_x': '-1',
+            'robot_y': '-6',
+            'robot_yaw': '3.14',
+        }.items(),
     )
 
     localization = IncludeLaunchDescription(

@@ -3,7 +3,7 @@ FROM ros:jazzy-ros-base
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Installs Nav2, SLAM, Gazebo, and minimal reference simulation dependencies
+# Installs Ros utilities and dependencies
 RUN apt-get update && apt-get install -y \
     ros-jazzy-rmw-cyclonedds-cpp \
     ros-jazzy-navigation2 \
@@ -19,7 +19,10 @@ RUN apt-get update && apt-get install -y \
     ros-jazzy-robot-localization \
     ros-jazzy-twist-stamper \
     ros-jazzy-vision-msgs \
-    libserial-dev \
+    libserial-dev
+
+# Installs other dependencies
+RUN apt-get update && apt-get install -y \
     python3-numpy \
     python3-opencv \
     python3-gi \
