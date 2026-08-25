@@ -47,6 +47,7 @@ class LedController(Node):
         )
         self.create_service(Trigger, '~/solid_red', self._solid_red)
         self.create_service(Trigger, '~/solid_green', self._solid_green)
+        self.create_service(Trigger, '~/off', self._off)
         self.get_logger().info(
             f'Mission LEDs ready: red=BCM {red_pin}, green=BCM {green_pin}'
         )
@@ -78,6 +79,14 @@ class LedController(Node):
         self._set_outputs(False, True)
         response.success = True
         response.message = 'solid green'
+        return response
+
+    def _off(self, request, response):
+        del request
+        self._blinking = False
+        self._set_outputs(False, False)
+        response.success = True
+        response.message = 'off'
         return response
 
     def _blink(self):

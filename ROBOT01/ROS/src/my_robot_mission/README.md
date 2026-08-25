@@ -100,6 +100,7 @@ The states can also be controlled manually:
 ros2 service call /mission_led_controller/start_blinking std_srvs/srv/Trigger '{}'
 ros2 service call /mission_led_controller/solid_red std_srvs/srv/Trigger '{}'
 ros2 service call /mission_led_controller/solid_green std_srvs/srv/Trigger '{}'
+ros2 service call /mission_led_controller/off std_srvs/srv/Trigger '{}'
 ```
 
 The default alternating period is 0.5 seconds. The server Docker image includes
