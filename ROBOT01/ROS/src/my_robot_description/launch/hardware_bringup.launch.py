@@ -2,8 +2,8 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import RegisterEventHandler
-from launch.event_handlers import OnProcessStart
+from launch.actions import ExecuteProcess, LogError, RegisterEventHandler
+from launch.event_handlers import OnProcessExit, OnProcessStart
 from launch.substitutions import Command
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
@@ -89,7 +89,47 @@ def generate_launch_description():
             '--controller-manager', '/controller_manager',
             '--param-file', controller_config,
             '--service-call-timeout', '30.0',
+            '--switch-timeout', '30.0',
         ],
+    )
+
+    # Move both gripper servos to a known neutral angle as soon as their
+    # controllers are active. The hardware interface and firmware use degrees.
+    default_servo_L_angle = 110.0
+    default_servo_R_angle = 80.0
+
+    def initialize_servos_after_spawn(event, _context):
+        if event.returncode != 0:
+            return [LogError(
+                msg='Controller spawning failed; servo initialization skipped.'
+            )]
+
+        return [
+            ExecuteProcess(
+                cmd=[
+                    'ros2', 'topic', 'pub', '--once',
+                    '/servo_L/commands',
+                    'std_msgs/msg/Float64MultiArray',
+                    f'{{data: [{default_servo_L_angle}]}}',
+                ],
+                output='screen',
+            ),
+            ExecuteProcess(
+                cmd=[
+                    'ros2', 'topic', 'pub', '--once',
+                    '/servo_R/commands',
+                    'std_msgs/msg/Float64MultiArray',
+                    f'{{data: [{default_servo_R_angle}]}}',
+                ],
+                output='screen',
+            ),
+        ]
+
+    initialize_servos = RegisterEventHandler(
+        OnProcessExit(
+            target_action=controller_spawner,
+            on_exit=initialize_servos_after_spawn,
+        )
     )
 
     # teleop_twist_keyboard publishes geometry_msgs/Twist on /cmd_vel, while
@@ -116,5 +156,6 @@ def generate_launch_description():
         robot_state_publisher,
         controller_manager,
         start_after_controller_manager,
+        initialize_servos,
         twist_stamper,
     ])

@@ -2,14 +2,14 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="mecanum_robot">
 
     <!-- chassis properties -->
-    <xacro:property name="chassis_length" value="0.35"/>  
-    <xacro:property name="chassis_width"  value="0.30"/>  
-    <xacro:property name="chassis_height" value="0.005"/>  
-    <xacro:property name="chassis_mass"   value="1.5"/>  
-    <xacro:property name="wheel_radius"   value="0.0325"/> 
-    <xacro:property name="wheel_thickness" value="0.03"/> 
-    <xacro:property name="wheel_mass"     value="0.1"/>  
-    <xacro:property name="ground_clearance" value="0.04"/> 
+    <xacro:property name="chassis_length" value="0.35"/>
+    <xacro:property name="chassis_width"  value="0.30"/>
+    <xacro:property name="chassis_height" value="0.005"/>
+    <xacro:property name="chassis_mass"   value="1.5"/>
+    <xacro:property name="wheel_radius"   value="0.0325"/>
+    <xacro:property name="wheel_thickness" value="0.03"/>
+    <xacro:property name="wheel_mass"     value="0.1"/>
+    <xacro:property name="ground_clearance" value="0.04"/>
 
     <!-- Temporary gripper collision footprint. -->
     <xacro:property name="gripper_box_length" value="0.18"/>
@@ -17,8 +17,8 @@
     <xacro:property name="gripper_box_height" value="0.02"/>
     <xacro:property name="gripper_box_mass" value="0.25"/>
 
-    <xacro:property name="wheel_inset_x" value="0.045"/> 
-    <xacro:property name="wheel_inset_y" value="0.015"/> 
+    <xacro:property name="wheel_inset_x" value="0.045"/>
+    <xacro:property name="wheel_inset_y" value="0.015"/>
 
     <xacro:property name="lidar_radius"     value="0.035"/>
     <xacro:property name="lidar_height"     value="0.025"/>
@@ -44,17 +44,17 @@
     <xacro:property name="wheel_pos_y" value="${(chassis_width / 2.0) + wheel_inset_y}"/>
     <xacro:property name="chassis_pos_z" value="${ground_clearance + (chassis_height / 2.0)}"/>
     <xacro:property name="wheel_pos_z"   value="${wheel_radius}"/>
-    
+
     <xacro:property name="lidar_update_rate"   value="10"/>
     <xacro:property name="lidar_samples"       value="360"/>
-    <xacro:property name="lidar_min_angle"     value="-3.14159"/> 
-    <xacro:property name="lidar_max_angle"     value="3.14159"/>  
+    <xacro:property name="lidar_min_angle"     value="-3.14159"/>
+    <xacro:property name="lidar_max_angle"     value="3.14159"/>
     <xacro:property name="lidar_min_range"     value="0.15"/>
     <xacro:property name="lidar_max_range"     value="12.0"/>
     <xacro:property name="lidar_noise_stddev"  value="0.01"/>
-    
-    <xacro:property name="wheelbase"        value="${wheel_pos_x * 2.0}"/> 
-    <xacro:property name="wheel_separation" value="${wheel_pos_y * 2.0}"/> 
+
+    <xacro:property name="wheelbase"        value="${wheel_pos_x * 2.0}"/>
+    <xacro:property name="wheel_separation" value="${wheel_pos_y * 2.0}"/>
 
     <xacro:property name="imu_sensor_L_x_offset" value="-0.105"/>
     <xacro:property name="imu_sensor_L_y_offset" value="0.080"/>
@@ -148,7 +148,7 @@
                 <material name="black"><color rgba="0.0 0.0 0.0 1.0"/></material>
             </visual>
             <collision>
-                <origin xyz="0 0 0" rpy="0 0 0"/> 
+                <origin xyz="0 0 0" rpy="0 0 0"/>
                 <geometry>
                     <sphere radius="${wheel_radius}"/>
                 </geometry>
@@ -163,7 +163,7 @@
             <!-- <axis xyz="0 ${z_axis_reflect} 0"/> -->
             <axis xyz="0 1 0"/>
         </joint>
-        
+
         <gazebo reference="${prefix}_wheel">
             <surface>
                 <friction>
@@ -249,7 +249,7 @@
         <child link="imu_sensor_R"/>
         <origin xyz="${imu_sensor_R_x_offset} ${imu_sensor_R_y_offset} ${imu_sensor_z_offset}" rpy="0 0 0"/>
     </joint>
-    
+
     <link name="ir_sensor_1"/>
     <joint name="ir_1_joint" type="fixed">
         <parent link="chassis"/>
@@ -303,6 +303,7 @@
                 <plugin>arduino_hardware_interface/ArduinoHardwareInterface</plugin>
                 <param name="serial_port">/dev/ttyNANO_L</param>
                 <param name="baudrate">115200</param>
+                <param name="initial_servo_angle">110.0</param>
             </hardware>
 
             <joint name="rear_left_wheel_joint">
@@ -348,6 +349,7 @@
                 <plugin>arduino_hardware_interface/ArduinoHardwareInterface</plugin>
                 <param name="serial_port">/dev/ttyAMA2</param>
                 <param name="baudrate">115200</param>
+                <param name="initial_servo_angle">80.0</param>
             </hardware>
 
             <joint name="rear_right_wheel_joint">

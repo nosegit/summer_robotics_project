@@ -26,6 +26,10 @@ void SMBOT::setup() {
 
   _IMU.begin();
 
+  _servo.write(DEFAULT_SERVO_ANGLE);
+  _arduino_state.setTargetServo(DEFAULT_SERVO_ANGLE);
+
+
   // Start the 50Hz main loop thread
   _thread_main.start(mbed::callback(this, &SMBOT::Main_loop));
 }
