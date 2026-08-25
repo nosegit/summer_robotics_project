@@ -82,3 +82,27 @@ real robot accidentally. Once enabled, the initial pose is published
 automatically on every mission start. Only use this on a robot that is
 physically placed at the configured start pose. An incorrect fixed pose can
 make Nav2 drive unsafely.
+
+## Raspberry Pi mission LEDs
+
+The persistent LED controller alternates red and green while a mission runs,
+then holds solid red when the mission completes. Hardware bringup starts it on
+BCM GPIO 17 (red) and BCM GPIO 27 (green) by default. Override the pins with:
+
+```bash
+ros2 launch my_robot_bringup hardware.launch.py \
+  red_led_gpio:=17 green_led_gpio:=27
+```
+
+The states can also be controlled manually:
+
+```bash
+ros2 service call /mission_led_controller/start_blinking std_srvs/srv/Trigger '{}'
+ros2 service call /mission_led_controller/solid_red std_srvs/srv/Trigger '{}'
+ros2 service call /mission_led_controller/solid_green std_srvs/srv/Trigger '{}'
+```
+
+The default alternating period is 0.5 seconds. The server Docker image includes
+`gpiozero` with its `lgpio` backend, and Compose passes `/dev/gpiomem` and
+`/dev/gpiochip0` into the server container. The GPIO devices exist only on a
+Raspberry Pi; remove or override those mappings on other hosts.

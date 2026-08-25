@@ -26,6 +26,8 @@ RUN apt-get update && apt-get install -y \
     python3-numpy \
     python3-opencv \
     python3-gi \
+    python3-gpiozero \
+    python3-lgpio \
     python3-gst-1.0 \
     gstreamer1.0-libav \
     gstreamer1.0-plugins-base \

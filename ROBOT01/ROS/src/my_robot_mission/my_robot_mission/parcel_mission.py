@@ -71,6 +71,12 @@ class ParcelMission(Node):
         self._gripper_status = self.create_client(
             Trigger, '/gripper_controller/status'
         )
+        self._led_blink = self.create_client(
+            Trigger, '/mission_led_controller/start_blinking'
+        )
+        self._led_solid_red = self.create_client(
+            Trigger, '/mission_led_controller/solid_red'
+        )
 
     @staticmethod
     def _validate_pose(value, name):
@@ -207,6 +213,16 @@ class ParcelMission(Node):
             time.sleep(0.05)
         raise RuntimeError(f'gripper {sequence_name} sequence timed out')
 
+    def _set_mission_led(self, client, state_name):
+        if not client.wait_for_service(timeout_sec=self._server_timeout):
+            raise RuntimeError(f'mission LED {state_name} service is unavailable')
+        future = client.call_async(Trigger.Request())
+        rclpy.spin_until_future_complete(self, future)
+        response = future.result()
+        if response is None or not response.success:
+            message = 'no response' if response is None else response.message
+            raise RuntimeError(f'failed to set mission LED {state_name}: {message}')
+
     def _navigate_to(self, pose, name):
         self.get_logger().info(f'Navigating to {name}: {pose}')
         goal = NavigateToPose.Goal()
@@ -254,6 +270,7 @@ class ParcelMission(Node):
             )
         command_text = [command[0] for command in self._commands]
         self.get_logger().info(f'Mission: {" -> ".join(command_text)}')
+        self._set_mission_led(self._led_blink, 'blinking')
         if any(name == 'navigate_to_pose' for _, name, _ in self._commands):
             self._wait_for_server(self._navigate, 'navigate_to_pose')
 
@@ -282,6 +299,7 @@ class ParcelMission(Node):
             elif name == 'pickup':
                 self._run_gripper_sequence(self._gripper_pickup, 'pickup')
 
+        self._set_mission_led(self._led_solid_red, 'solid red')
         self.get_logger().info('Mission complete')
 
 

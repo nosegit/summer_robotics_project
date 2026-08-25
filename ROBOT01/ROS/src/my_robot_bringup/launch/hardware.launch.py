@@ -35,6 +35,8 @@ def generate_launch_description():
     parcel_acquisition = LaunchConfiguration('parcel_acquisition')
     debug_image = LaunchConfiguration('debug_image')
     camera_info_url = LaunchConfiguration('camera_info_url')
+    red_led_gpio = LaunchConfiguration('red_led_gpio')
+    green_led_gpio = LaunchConfiguration('green_led_gpio')
     nav2_params = RewrittenYaml(
         source_file=params_file,
         param_rewrites={'cmd_vel_out_topic': '/cmd_vel_navigation'},
@@ -132,6 +134,15 @@ def generate_launch_description():
         output='screen',
         parameters=[{'use_sim_time': False}],
     )
+    mission_led_controller = Node(
+        package='my_robot_mission',
+        executable='led_controller',
+        output='screen',
+        parameters=[{
+            'red_gpio_pin': red_led_gpio,
+            'green_gpio_pin': green_led_gpio,
+        }],
+    )
 
     return LaunchDescription([
         # Nav2's isolated component container can need longer than the launch
@@ -152,6 +163,14 @@ def generate_launch_description():
             description='RPLIDAR A1 serial device; verify this on the robot.',
         ),
         DeclareLaunchArgument('lidar_baudrate', default_value='115200'),
+        DeclareLaunchArgument(
+            'red_led_gpio', default_value='17',
+            description='BCM GPIO number for the red mission LED.',
+        ),
+        DeclareLaunchArgument(
+            'green_led_gpio', default_value='27',
+            description='BCM GPIO number for the green mission LED.',
+        ),
         DeclareLaunchArgument(
             'parcel_acquisition', default_value='true',
             description='Start the Pi camera, parcel vision, and acquisition actions.',
@@ -174,4 +193,5 @@ def generate_launch_description():
         vision,
         acquisition,
         cmd_vel_arbiter,
+        mission_led_controller,
     ])

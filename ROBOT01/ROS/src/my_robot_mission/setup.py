@@ -20,6 +20,7 @@ setup(
     license='Apache-2.0',
     entry_points={
         'console_scripts': [
+            'led_controller = my_robot_mission.utils.led_controller:main',
             'parcel_mission = my_robot_mission.parcel_mission:main',
         ],
     },
