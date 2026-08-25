@@ -2,7 +2,7 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess, LogError, RegisterEventHandler
+from launch.actions import ExecuteProcess, LogInfo, RegisterEventHandler
 from launch.event_handlers import OnProcessExit, OnProcessStart
 from launch.substitutions import Command
 from launch_ros.actions import Node
@@ -100,8 +100,8 @@ def generate_launch_description():
 
     def initialize_servos_after_spawn(event, _context):
         if event.returncode != 0:
-            return [LogError(
-                msg='Controller spawning failed; servo initialization skipped.'
+            return [LogInfo(
+                msg='ERROR: Controller spawning failed; servo initialization skipped.'
             )]
 
         return [
