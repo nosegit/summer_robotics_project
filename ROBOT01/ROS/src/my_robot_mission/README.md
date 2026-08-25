@@ -5,7 +5,7 @@ This package runs a YAML-defined command sequence, for example:
 1. Publish the fixed robot start pose to AMCL.
 2. Navigate to a safe parcel approach pose (normally about 1 m away).
 3. Search for, dock with, and pick up the configured ArUco parcel.
-4. Navigate to the destination pose.
+4. Navigate to the destination pose and open the gripper.
 
 Before using hardware, edit `config/mission.yaml` and change
 `mission_configured` to `true`. Every entry in `poses` is `[x, y, yaw]` in the
@@ -16,7 +16,16 @@ Commands are executed from top to bottom:
 
 - `set_initial_pose`
 - `navigate_to_pose(N)` navigates to pose ID `N` from `poses`.
-- `acquire_parcel(N)` acquires the parcel with ArUco marker ID `N`.
+- `search_parcel(N)` searches for marker ID `N`.
+- `servo_parcel(N)` docks with marker ID `N`.
+- `rotate_blind` performs the configured pickup rotation.
+- `idle`, `open_gripper`, and `pickup` run the matching gripper sequence.
+- `acquire_parcel(N)` is a shortcut for search, docking, and blind rotation;
+  it does not move the gripper.
+
+Gripper movement only occurs when its command is explicitly present in the
+mission YAML. Gripper operations wait for the smooth motion to finish before
+the mission continues.
 
 For example:
 
@@ -25,10 +34,16 @@ poses:
   0: [1.0, 0.0, 0.0]
   10: [0.0, 1.0, 1.5708]
 commands:
+  - idle
   - set_initial_pose
   - navigate_to_pose(0)
-  - acquire_parcel(2)
+  - search_parcel(2)
+  - servo_parcel(2)
+  - open_gripper
+  - rotate_blind
+  - pickup
   - navigate_to_pose(10)
+  - open_gripper
 ```
 
 Commands can be reordered, omitted, or repeated. The complete command list and

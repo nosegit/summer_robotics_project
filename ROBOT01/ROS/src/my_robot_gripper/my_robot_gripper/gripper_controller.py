@@ -21,6 +21,10 @@ class SmoothServo:
     def command(self, targets):
         self.targets = deque(float(target) for target in targets)
 
+    @property
+    def busy(self):
+        return bool(self.targets)
+
     def update_from_state(self, angle):
         if not self.targets:
             self.angle = angle
@@ -123,6 +127,16 @@ class GripperController(Node):
                 ),
             )
 
+        self.active_sequence = None
+        self.sequence_stages = deque()
+        for sequence_name in ('idle', 'open_gripper', 'pickup'):
+            self.create_service(
+                Trigger,
+                f'~/{sequence_name}',
+                partial(self._start_sequence, sequence_name=sequence_name),
+            )
+        self.create_service(Trigger, '~/status', self._status)
+
         self.create_timer(self.period, self._update)
 
     def _joint_state(self, message):
@@ -136,6 +150,11 @@ class GripperController(Node):
         self, request, response, servo, parameter_names, command_name
     ):
         del request
+        if self._motion_busy():
+            response.success = False
+            response.message = 'Another gripper motion is already active'
+            return response
+
         targets = [
             float(self.get_parameter(parameter_name).value)
             for parameter_name in parameter_names
@@ -148,9 +167,83 @@ class GripperController(Node):
         )
         return response
 
+    def _start_sequence(self, request, response, sequence_name):
+        del request
+        if self._motion_busy():
+            response.success = False
+            response.message = 'Another gripper motion is already active'
+            return response
+
+        open_angle = self._angle('open_angle')
+        close_angle = self._angle('close_angle')
+        down_angle = self._angle('down_angle')
+        down_fit_angle = self._angle('down_fit_angle')
+        lift_up_targets = [
+            self._angle('up_peak_angle'),
+            self._angle('up_settle_angle'),
+        ]
+        sequences = {
+            'idle': [
+                [(self.right_servo, [down_angle]),
+                 (self.left_servo, [close_angle])],
+            ],
+            'open_gripper': [
+                [(self.right_servo, [down_fit_angle])],
+                [(self.left_servo, [open_angle])],
+            ],
+            'pickup': [
+                [(self.right_servo, [down_fit_angle])],
+                [(self.left_servo, [close_angle])],
+                [(self.right_servo, lift_up_targets)],
+            ],
+        }
+
+        self.active_sequence = sequence_name
+        self.sequence_stages = deque(sequences[sequence_name])
+        self._start_next_stage()
+        response.success = True
+        response.message = f'{sequence_name} sequence accepted'
+        return response
+
+    def _status(self, request, response):
+        del request
+        response.success = not self._motion_busy()
+        response.message = (
+            'idle' if response.success
+            else f'active: {self.active_sequence or "manual motion"}'
+        )
+        return response
+
+    def _angle(self, parameter_name):
+        return float(self.get_parameter(parameter_name).value)
+
+    def _motion_busy(self):
+        return (
+            self.active_sequence is not None
+            or self.left_servo.busy
+            or self.right_servo.busy
+        )
+
+    def _start_next_stage(self):
+        if not self.sequence_stages:
+            self.get_logger().info(
+                f'{self.active_sequence} sequence completed'
+            )
+            self.active_sequence = None
+            return
+
+        for servo, targets in self.sequence_stages.popleft():
+            servo.command(targets)
+
     def _update(self):
         self.left_servo.update(self.period)
         self.right_servo.update(self.period)
+        if (
+            self.active_sequence is not None
+            and not self.left_servo.busy
+            and not self.right_servo.busy
+        ):
+            self._start_next_stage()
 
 
 def main(args=None):

@@ -21,6 +21,7 @@ def generate_launch_description():
     navigation_share = get_package_share_directory('my_robot_navigation')
     nav2_share = get_package_share_directory('nav2_bringup')
     rplidar_share = get_package_share_directory('rplidar_ros')
+    gripper_share = get_package_share_directory('my_robot_gripper')
 
     mode = LaunchConfiguration('mode')
     map_file = LaunchConfiguration('map')
@@ -33,6 +34,11 @@ def generate_launch_description():
             os.path.join(
                 description_share, 'launch', 'hardware_bringup.launch.py'
             )
+        )
+    )
+    gripper = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(gripper_share, 'launch', 'gripper.launch.py')
         )
     )
     lidar = IncludeLaunchDescription(
@@ -76,6 +82,7 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument('lidar_baudrate', default_value='115200'),
         hardware_description,
+        gripper,
         lidar,
         nav2,
     ])

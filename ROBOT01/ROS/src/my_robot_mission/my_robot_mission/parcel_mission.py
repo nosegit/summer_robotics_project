@@ -14,13 +14,15 @@ from my_robot_parcel_aquisition.action import RotateBlind, SearchParcel, ServoPa
 from nav2_msgs.action import NavigateToPose
 from rclpy.action import ActionClient
 from rclpy.node import Node
+from std_srvs.srv import Trigger
 
 
 class ParcelMission(Node):
     """Execute the command list from a mission YAML file."""
 
     COMMAND_PATTERN = re.compile(
-        r'^(set_initial_pose|navigate_to_pose|acquire_parcel)'
+        r'^(set_initial_pose|navigate_to_pose|acquire_parcel|search_parcel|'
+        r'servo_parcel|rotate_blind|idle|open_gripper|pickup)'
         r'(?:\(\s*(-?\d+)\s*\))?$'
     )
 
@@ -57,6 +59,18 @@ class ParcelMission(Node):
         self._search = ActionClient(self, SearchParcel, 'search_parcel')
         self._servo = ActionClient(self, ServoParcel, 'servo_parcel')
         self._rotate = ActionClient(self, RotateBlind, 'rotate_blind')
+        self._gripper_idle = self.create_client(
+            Trigger, '/gripper_controller/idle'
+        )
+        self._gripper_pickup = self.create_client(
+            Trigger, '/gripper_controller/pickup'
+        )
+        self._gripper_open = self.create_client(
+            Trigger, '/gripper_controller/open_gripper'
+        )
+        self._gripper_status = self.create_client(
+            Trigger, '/gripper_controller/status'
+        )
 
     @staticmethod
     def _validate_pose(value, name):
@@ -77,9 +91,17 @@ class ParcelMission(Node):
             if match is None:
                 raise ValueError(f'Invalid mission command: {text!r}')
             name, argument = match.groups()
-            if name == 'set_initial_pose' and argument is not None:
-                raise ValueError('set_initial_pose does not accept an argument')
-            if name != 'set_initial_pose' and argument is None:
+            no_argument_commands = {
+                'set_initial_pose', 'rotate_blind', 'idle',
+                'open_gripper', 'pickup',
+            }
+            marker_or_pose_commands = {
+                'navigate_to_pose', 'acquire_parcel',
+                'search_parcel', 'servo_parcel',
+            }
+            if name in no_argument_commands and argument is not None:
+                raise ValueError(f'{name} does not accept an argument')
+            if name in marker_or_pose_commands and argument is None:
                 raise ValueError(f'{name} requires an integer argument')
             parsed.append((text, name, None if argument is None else int(argument)))
 
@@ -152,6 +174,39 @@ class ParcelMission(Node):
             raise RuntimeError(f'{name} failed with action status {status}')
         return wrapped_result.result
 
+    def _run_gripper_sequence(self, client, sequence_name):
+        self.get_logger().info(f'Starting gripper {sequence_name} sequence')
+        if not client.wait_for_service(timeout_sec=self._server_timeout):
+            raise RuntimeError(
+                f'gripper {sequence_name} service is unavailable'
+            )
+        if not self._gripper_status.wait_for_service(
+            timeout_sec=self._server_timeout
+        ):
+            raise RuntimeError('gripper status service is unavailable')
+
+        future = client.call_async(Trigger.Request())
+        rclpy.spin_until_future_complete(self, future)
+        response = future.result()
+        if response is None or not response.success:
+            message = 'no response' if response is None else response.message
+            raise RuntimeError(
+                f'gripper {sequence_name} was rejected: {message}'
+            )
+
+        deadline = time.monotonic() + self._server_timeout
+        while rclpy.ok() and time.monotonic() < deadline:
+            status_future = self._gripper_status.call_async(Trigger.Request())
+            rclpy.spin_until_future_complete(self, status_future)
+            status = status_future.result()
+            if status is not None and status.success:
+                self.get_logger().info(
+                    f'Gripper {sequence_name} sequence completed'
+                )
+                return
+            time.sleep(0.05)
+        raise RuntimeError(f'gripper {sequence_name} sequence timed out')
+
     def _navigate_to(self, pose, name):
         self.get_logger().info(f'Navigating to {name}: {pose}')
         goal = NavigateToPose.Goal()
@@ -160,30 +215,36 @@ class ParcelMission(Node):
         self.get_logger().info(f'Arrived at {name}')
 
     def _acquire_parcel(self, marker_id):
-        self._wait_for_server(self._search, 'search_parcel')
-        self._wait_for_server(self._servo, 'servo_parcel')
-        self._wait_for_server(self._rotate, 'rotate_blind')
-        self.get_logger().info(f'Starting acquisition for parcel marker {marker_id}')
+        self._search_for_parcel(marker_id)
+        self._servo_to_parcel(marker_id)
+        self._rotate_for_pickup()
+        self.get_logger().info('Parcel acquisition positioning complete')
 
+    def _search_for_parcel(self, marker_id):
+        self._wait_for_server(self._search, 'search_parcel')
         result = self._run_action(
             self._search, SearchParcel.Goal(marker_id=marker_id), 'parcel search'
         )
         if not result.success:
             raise RuntimeError(f'parcel search failed: {result.message}')
+
+    def _servo_to_parcel(self, marker_id):
+        self._wait_for_server(self._servo, 'servo_parcel')
         result = self._run_action(
             self._servo, ServoParcel.Goal(marker_id=marker_id), 'parcel docking'
         )
         if not result.success:
             raise RuntimeError(f'parcel docking failed: {result.message}')
+
+    def _rotate_for_pickup(self):
+        self._wait_for_server(self._rotate, 'rotate_blind')
         result = self._run_action(
             self._rotate,
             RotateBlind.Goal(angle=self._pickup_rotation),
-            'parcel pickup',
+            'parcel pickup positioning',
         )
         if not result.success:
             raise RuntimeError(f'parcel pickup failed: {result.message}')
-
-        self.get_logger().info('Parcel acquisition complete')
 
     def run(self):
         if not self._configured:
@@ -206,6 +267,20 @@ class ParcelMission(Node):
                 self._navigate_to(self._poses[argument], f'pose {argument}')
             elif name == 'acquire_parcel':
                 self._acquire_parcel(argument)
+            elif name == 'search_parcel':
+                self._search_for_parcel(argument)
+            elif name == 'servo_parcel':
+                self._servo_to_parcel(argument)
+            elif name == 'rotate_blind':
+                self._rotate_for_pickup()
+            elif name == 'idle':
+                self._run_gripper_sequence(self._gripper_idle, 'idle')
+            elif name == 'open_gripper':
+                self._run_gripper_sequence(
+                    self._gripper_open, 'open_gripper'
+                )
+            elif name == 'pickup':
+                self._run_gripper_sequence(self._gripper_pickup, 'pickup')
 
         self.get_logger().info('Mission complete')
 

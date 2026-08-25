@@ -10,12 +10,18 @@ poses:
 
 
 # Commands are executed from top to bottom. Commands may be reordered,
-# omitted, or repeated. acquire_parcel(N) uses ArUco marker ID N.
+# omitted or repeated. Gripper movements occur only when listed explicitly.
 commands:
+  - idle
   - set_initial_pose
   - navigate_to_pose(0)
-  - acquire_parcel(0)
+  - search_parcel(0)
+  - servo_parcel(0)
+  - open_gripper
+  - rotate_blind
+  - pickup
   - navigate_to_pose(1)
+  - open_gripper
 
 pickup_rotation: 1.5708
 initial_pose_publish_count: 5

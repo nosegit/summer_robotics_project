@@ -40,7 +40,7 @@ Use the saved map with `map:=/absolute/path/to/my_map.yaml`. The hardware entry 
 ros2 launch my_robot_bringup hardware.launch.py mode:=localization lidar_port:=/dev/ttyUSB0
 ```
 
-The hardware launch includes `my_robot_description/launch/hardware_bringup.launch.py`, which owns the Arduino hardware interface and uses `my_robot_description/config/mecanum_controllers.yaml`. Before hardware use, confirm the Arduino ports embedded in the robot Xacro, RPLIDAR device, and that `laser_frame`, `odom`, and `base_link` transforms are correct.
+The hardware launch includes `my_robot_description/launch/hardware_bringup.launch.py`, which owns the Arduino hardware interface and uses `my_robot_description/config/mecanum_controllers.yaml`. It also starts `my_robot_gripper`, making the idle, pickup, and open-gripper sequence services available to missions. Before hardware use, confirm the Arduino ports embedded in the robot Xacro, RPLIDAR device, and that `laser_frame`, `odom`, and `base_link` transforms are correct.
 
 ## CLI - note
 ### SIMULATION

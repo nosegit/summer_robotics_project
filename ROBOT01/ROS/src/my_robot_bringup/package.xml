@@ -15,6 +15,7 @@
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>my_robot_parcel_aquisition</exec_depend>
   <exec_depend>my_robot_description</exec_depend>
+  <exec_depend>my_robot_gripper</exec_depend>
   <exec_depend>my_robot_localization</exec_depend>
   <exec_depend>my_robot_navigation</exec_depend>
   <exec_depend>my_robot_sim</exec_depend>
