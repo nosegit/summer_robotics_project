@@ -1,0 +1,18 @@
+gripper_controller:
+  ros__parameters:
+    servo_L_topic: /servo_L/commands
+    servo_R_topic: /servo_R/commands
+    servo_L_joint: servo_L_joint
+    servo_R_joint: servo_R_joint
+    open_angle: 0.0
+    close_angle: 110.0
+    down_angle: 80.0
+    down_fit_angle: 70.0
+    up_peak_angle: 180.0
+    up_settle_angle: 140.0
+    initial_servo_L_angle: 110.0
+    initial_servo_R_angle: 80.0
+    gripper_speed: 50.0
+    lift_speed: 50.0
+    update_rate: 50.0
+    angle_tolerance: 0.25

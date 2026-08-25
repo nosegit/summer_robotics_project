@@ -278,20 +278,20 @@
         <origin xyz="-0.2 -0.1 0" rpy="0 0 0"/>
     </joint>
 
-    <!-- SERVO 1 (Front) -->
-    <link name="servo_1_link"/>
-    <joint name="servo_1_joint" type="continuous">
+    <!-- LEFT SERVO (Front) -->
+    <link name="servo_L_link"/>
+    <joint name="servo_L_joint" type="continuous">
         <parent link="chassis"/>
-        <child link="servo_1_link"/>
+        <child link="servo_L_link"/>
         <origin xyz="0.2 0.0 0.1" rpy="0 0 0"/>
         <axis xyz="0 0 1"/>
     </joint>
 
-    <!-- SERVO 2 (Rear) -->
-    <link name="servo_2_link"/>
-    <joint name="servo_2_joint" type="continuous">
+    <!-- RIGHT SERVO (Rear) -->
+    <link name="servo_R_link"/>
+    <joint name="servo_R_joint" type="continuous">
         <parent link="chassis"/>
-        <child link="servo_2_link"/>
+        <child link="servo_R_link"/>
         <origin xyz="-0.2 0.0 0.1" rpy="0 0 0"/>
         <axis xyz="0 0 1"/>
     </joint>
@@ -318,7 +318,7 @@
                 <param name="direction_multiplier">1</param>
             </joint>
 
-            <joint name="servo_1_joint">
+            <joint name="servo_L_joint">
                 <command_interface name="position"/>
                 <state_interface name="position"/>
             </joint>
@@ -363,7 +363,7 @@
                 <param name="direction_multiplier">-1</param>
             </joint>
 
-            <joint name="servo_2_joint">
+            <joint name="servo_R_joint">
                 <command_interface name="position"/>
                 <state_interface name="position"/>
             </joint>

@@ -21,6 +21,7 @@
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>mecanum_drive_controller</exec_depend>
+  <exec_depend>position_controllers</exec_depend>
   <exec_depend>range_sensor_broadcaster</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>nav_msgs</exec_depend>

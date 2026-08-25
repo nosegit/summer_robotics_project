@@ -26,6 +26,12 @@ controller_manager:
     mecanum_drive_controller:
       type: mecanum_drive_controller/MecanumDriveController
 
+    servo_L:
+      type: position_controllers/JointGroupPositionController
+
+    servo_R:
+      type: position_controllers/JointGroupPositionController
+
 imu_sensor_L_broadcaster:
   ros__parameters:
     sensor_name: "imu_sensor_L"
@@ -59,6 +65,16 @@ ir_sensor_4_broadcaster:
     sensor_name: "ir_sensor_4"
     frame_id: "ir_sensor_4"
     radiation_type: 1
+
+servo_L:
+  ros__parameters:
+    joints:
+      - servo_L_joint
+
+servo_R:
+  ros__parameters:
+    joints:
+      - servo_R_joint
 
 mecanum_drive_controller:
   ros__parameters:

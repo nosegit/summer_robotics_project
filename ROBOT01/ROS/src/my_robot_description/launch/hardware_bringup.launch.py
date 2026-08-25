@@ -37,6 +37,10 @@ def generate_launch_description():
             'range_sensor_broadcaster/RangeSensorBroadcaster',
         'ir_sensor_4_broadcaster':
             'range_sensor_broadcaster/RangeSensorBroadcaster',
+        'servo_L':
+            'position_controllers/JointGroupPositionController',
+        'servo_R':
+            'position_controllers/JointGroupPositionController',
         'mecanum_drive_controller':
             'mecanum_drive_controller/MecanumDriveController',
     }
