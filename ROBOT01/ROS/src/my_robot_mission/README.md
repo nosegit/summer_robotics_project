@@ -20,6 +20,13 @@ Commands are executed from top to bottom:
 - `servo_parcel(N)` docks with marker ID `N`.
 - `rotate_blind` performs the configured pickup rotation.
 - `idle`, `open_gripper`, and `pickup` run the matching gripper sequence.
+- `open_door(N)` sends ASCII `open` to door ID `N` over UDP.
+- `close_door(N)` sends ASCII `close` to door ID `N` over UDP.
+- `wait(N)` waits for `N` seconds while continuing to process ROS callbacks.
+- `led_blink` alternates the red and green mission LEDs.
+- `led_red` holds the red LED on.
+- `led_green` holds the green LED on.
+- `led_off` turns both mission LEDs off.
 - `acquire_parcel(N)` is a shortcut for search, docking, and blind rotation;
   it does not move the gripper.
 
@@ -36,6 +43,7 @@ poses:
 commands:
   - idle
   - set_initial_pose
+  - led_blink
   - navigate_to_pose(0)
   - search_parcel(2)
   - servo_parcel(2)
@@ -43,8 +51,25 @@ commands:
   - rotate_blind
   - pickup
   - navigate_to_pose(10)
+  - open_door(0)
+  - led_green
+  - wait(10)
+  - close_door(0)
+  - open_door(1)
+  - wait(10)
+  - close_door(1)
+  - led_red
   - open_gripper
+
+doors:
+  0: {host: 192.168.1.100, port: 50000}
+  1: {host: 192.168.1.101, port: 50000}
 ```
+
+Door commands use UDP. Each entry in `doors` has its own controller IP address;
+its `port` defaults to `50000` when omitted. UDP does not acknowledge delivery,
+so a successful send only confirms that the datagram was handed to the network
+stack.
 
 Commands can be reordered, omitted, or repeated. The complete command list and
 all referenced poses are validated before robot motion starts.
@@ -75,6 +100,8 @@ a different configuration for one run:
 
 ```bash
 ros2 run my_robot_mission parcel_mission --mission-file /path/to/mission.yaml
+ros2 run my_robot_mission parcel_mission --mission-file /root/ros2_ws/src/my_robot_mission/config/mission.yaml
+
 ```
 
 The default configuration is disabled so its example coordinates cannot move a

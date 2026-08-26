@@ -76,7 +76,7 @@ ros2 param set /parcel_acquisition_manager target_yaw -1.5708
 ros2 param set /parcel_acquisition_manager kp_x 0.8
 ros2 param set /parcel_acquisition_manager kp_y 1.0
 ros2 param set /parcel_acquisition_manager kp_yaw 1.0
-ros2 param set /parcel_acquisition_manager max_linear_velocity 0.15
+ros2 param set /parcel_acquisition_manager max_linear_velocity 0.15x`
 ros2 param set /parcel_acquisition_manager max_angular_velocity 0.5
 ros2 param set /parcel_acquisition_manager rotate_forward_distance 0.235
 ```

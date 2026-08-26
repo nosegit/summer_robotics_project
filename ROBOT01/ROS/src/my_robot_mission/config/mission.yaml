@@ -1,27 +1,40 @@
 # Set this to true only after measuring and checking every pose.
-mission_configured: ture
+mission_configured: true
 
 # All poses are [x metres, y metres, yaw radians] in the map frame.
 start_pose: [-1.0, -6.0, 3.14]
 # start_pose: [-0.0, -0.0, 3.14]
 poses:
-  0: [-5.0, -4.0, 1.57]
-  1: [-1.5, -4.0, 0.0]
+  0: [-1.5, -4.0, 3.14] # door 0.5m far
+  1: [-3.0, -6.85, 1.57] # parcel start point
+  2: [-1.5, -4.0, 0.0] # door 0.5m far
+  3: [-1.8, -4.0, 0.0] # door 0.8m far
+
 
 
 # Commands are executed from top to bottom. Commands may be reordered,
 # omitted or repeated. Gripper movements occur only when listed explicitly.
 commands:
-  - idle
+  # - idle
   - set_initial_pose
+  # LED commands may be inserted anywhere: led_blink, led_red, led_green, led_off
   - navigate_to_pose(0)
-  - search_parcel(0)
-  - servo_parcel(0)
+  - navigate_to_pose(1)
+  - search_parcel(6)
+  - servo_parcel(6)
   - open_gripper
   - rotate_blind
   - pickup
-  - navigate_to_pose(1)
+  - navigate_to_pose(2)
   - open_gripper
+  - navigate_to_pose(3)
+  - idle
+
+# UDP endpoints for the two door controllers. Replace these example addresses
+# before adding open_door(N) or close_door(N) to the command list.
+doors:
+  0: {host: 192.168.1.100, port: 50000}
+  1: {host: 192.168.1.101, port: 50000}
 
 pickup_rotation: 1.5708
 initial_pose_publish_count: 5

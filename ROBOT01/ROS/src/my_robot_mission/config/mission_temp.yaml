@@ -1,0 +1,31 @@
+# Set this to true only after measuring and checking every pose.
+mission_configured: ture
+
+# All poses are [x metres, y metres, yaw radians] in the map frame.
+start_pose: [-1.0, -6.0, 3.14]
+# start_pose: [-0.0, -0.0, 3.14]
+poses:
+  0: [-5.0, -4.0, 1.57]
+  1: [-1.5, -4.0, 0.0]
+
+
+# Commands are executed from top to bottom. Commands may be reordered,
+# omitted or repeated. Gripper movements occur only when listed explicitly.
+commands:
+  - idle
+  - set_initial_pose
+  - navigate_to_pose(0)
+  - search_parcel(0)
+  - servo_parcel(0)
+  - open_gripper
+  - rotate_blind
+  - pickup
+  - navigate_to_pose(1)
+  - open_gripper
+
+pickup_rotation: 1.5708
+initial_pose_publish_count: 5
+initial_pose_publish_period: 0.5
+localization_settle_time: 2.0
+server_timeout: 60.0
+map_frame: map

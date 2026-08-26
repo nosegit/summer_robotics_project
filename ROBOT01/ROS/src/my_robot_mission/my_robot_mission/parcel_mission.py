@@ -2,6 +2,7 @@ import argparse
 import math
 import os
 import re
+import socket
 import sys
 import time
 
@@ -22,7 +23,8 @@ class ParcelMission(Node):
 
     COMMAND_PATTERN = re.compile(
         r'^(set_initial_pose|navigate_to_pose|acquire_parcel|search_parcel|'
-        r'servo_parcel|rotate_blind|idle|open_gripper|pickup)'
+        r'servo_parcel|rotate_blind|idle|open_gripper|pickup|open_door|'
+        r'close_door|wait|led_blink|led_red|led_green|led_off)'
         r'(?:\(\s*(-?\d+)\s*\))?$'
     )
 
@@ -52,6 +54,22 @@ class ParcelMission(Node):
         )
         self._server_timeout = float(config.get('server_timeout', 60.0))
         self._map_frame = str(config.get('map_frame', 'map'))
+        raw_doors = config.get('doors', {})
+        if not isinstance(raw_doors, dict):
+            raise ValueError('doors must be a YAML mapping of door IDs')
+        self._doors = {
+            int(door_id): self._validate_door(values, door_id)
+            for door_id, values in raw_doors.items()
+        }
+        missing_doors = sorted({
+            argument for _, name, argument in self._commands
+            if name in {'open_door', 'close_door'}
+            and argument not in self._doors
+        })
+        if missing_doors:
+            raise ValueError(
+                f'Commands reference undefined door IDs: {missing_doors}'
+            )
         self._initial_pose_publisher = self.create_publisher(
             PoseWithCovarianceStamped, '/initialpose', 10
         )
@@ -77,6 +95,12 @@ class ParcelMission(Node):
         self._led_solid_red = self.create_client(
             Trigger, '/mission_led_controller/solid_red'
         )
+        self._led_solid_green = self.create_client(
+            Trigger, '/mission_led_controller/solid_green'
+        )
+        self._led_off = self.create_client(
+            Trigger, '/mission_led_controller/off'
+        )
 
     @staticmethod
     def _validate_pose(value, name):
@@ -86,6 +110,17 @@ class ParcelMission(Node):
         if len(values) != 3 or not all(math.isfinite(float(value)) for value in values):
             raise ValueError(f'{name} must contain three finite values: [x, y, yaw]')
         return tuple(float(value) for value in values)
+
+    @staticmethod
+    def _validate_door(value, door_id):
+        if not isinstance(value, dict) or not value.get('host'):
+            raise ValueError(f'doors[{door_id}] must contain a host')
+        port = int(value.get('port', 50000))
+        if not 1 <= port <= 65535:
+            raise ValueError(
+                f'doors[{door_id}].port must be between 1 and 65535'
+            )
+        return str(value['host']), port
 
     def _parse_commands(self, commands):
         if not isinstance(commands, list) or not commands:
@@ -99,16 +134,21 @@ class ParcelMission(Node):
             name, argument = match.groups()
             no_argument_commands = {
                 'set_initial_pose', 'rotate_blind', 'idle',
-                'open_gripper', 'pickup',
+                'open_gripper', 'pickup', 'led_blink', 'led_red',
+                'led_green', 'led_off',
             }
             marker_or_pose_commands = {
                 'navigate_to_pose', 'acquire_parcel',
-                'search_parcel', 'servo_parcel',
+                'search_parcel', 'servo_parcel', 'open_door', 'close_door',
             }
             if name in no_argument_commands and argument is not None:
                 raise ValueError(f'{name} does not accept an argument')
             if name in marker_or_pose_commands and argument is None:
                 raise ValueError(f'{name} requires an integer argument')
+            if name == 'wait' and argument is None:
+                raise ValueError('wait requires a duration in seconds')
+            if name == 'wait' and argument < 0:
+                raise ValueError('wait duration must be non-negative')
             parsed.append((text, name, None if argument is None else int(argument)))
 
         missing_poses = sorted({
@@ -223,6 +263,28 @@ class ParcelMission(Node):
             message = 'no response' if response is None else response.message
             raise RuntimeError(f'failed to set mission LED {state_name}: {message}')
 
+    def _send_door_command(self, door_id, command):
+        destination = self._doors[door_id]
+        self.get_logger().info(
+            f'Sending door {door_id} command {command!r} to '
+            f'{destination[0]}:{destination[1]}'
+        )
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
+                udp_socket.sendto(command.encode('ascii'), destination)
+        except OSError as error:
+            raise RuntimeError(
+                f'failed to send door {door_id} command {command!r}: {error}'
+            ) from error
+
+    def _wait(self, seconds):
+        self.get_logger().info(f'Waiting for {seconds} seconds')
+        end_time = time.monotonic() + seconds
+        while rclpy.ok() and time.monotonic() < end_time:
+            rclpy.spin_once(
+                self, timeout_sec=min(0.1, end_time - time.monotonic())
+            )
+
     def _navigate_to(self, pose, name):
         self.get_logger().info(f'Navigating to {name}: {pose}')
         goal = NavigateToPose.Goal()
@@ -298,6 +360,22 @@ class ParcelMission(Node):
                 )
             elif name == 'pickup':
                 self._run_gripper_sequence(self._gripper_pickup, 'pickup')
+            elif name == 'open_door':
+                self._send_door_command(argument, 'open')
+            elif name == 'close_door':
+                self._send_door_command(argument, 'close')
+            elif name == 'wait':
+                self._wait(argument)
+            elif name == 'led_blink':
+                self._set_mission_led(self._led_blink, 'blinking')
+            elif name == 'led_red':
+                self._set_mission_led(self._led_solid_red, 'solid red')
+            elif name == 'led_green':
+                self._set_mission_led(
+                    self._led_solid_green, 'solid green'
+                )
+            elif name == 'led_off':
+                self._set_mission_led(self._led_off, 'off')
 
         self._set_mission_led(self._led_solid_red, 'solid red')
         self.get_logger().info('Mission complete')
