@@ -24,9 +24,9 @@ commands:
   - navigate_to_pose(1)
   - search_parcel(6)
   - servo_parcel(6)
-  - open_gripper
+  # - open_gripper
   - rotate_blind
-  - pickup
+  # - pickup
   - navigate_to_pose(2)
   - open_door(0)
   - wait(10)

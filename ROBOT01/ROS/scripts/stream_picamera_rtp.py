@@ -135,7 +135,7 @@ def parse_arguments():
     parser.add_argument('port', nargs='?', type=int, default=5600)
     parser.add_argument('--width', type=int, default=640)
     parser.add_argument('--height', type=int, default=480)
-    parser.add_argument('--fps', type=float, default=30.0)
+    parser.add_argument('--fps', type=float, default=10.0)
     parser.add_argument('--bitrate', type=int, default=2_000_000)
     parser.add_argument('--mtu', type=int, default=1200)
     arguments = parser.parse_args()

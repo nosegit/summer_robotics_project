@@ -10,7 +10,7 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('width', default_value='640'),
         DeclareLaunchArgument('height', default_value='480'),
-        DeclareLaunchArgument('fps', default_value='30.0'),
+        DeclareLaunchArgument('fps', default_value='10.0'),
         DeclareLaunchArgument(
             'camera_info_url', default_value='',
             description='file:///absolute/path/to/ROS_camera_calibration.yaml',

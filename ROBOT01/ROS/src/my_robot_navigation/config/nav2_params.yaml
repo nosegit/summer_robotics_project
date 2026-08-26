@@ -33,7 +33,7 @@ bt_navigator:
     robot_base_frame: base_link
     odom_topic: /odom
     bt_loop_duration: 10
-    default_server_timeout: 20
+    default_server_timeout: 1000
     # Enable error codes to prevent modern Nav2 warnings
     error_code_names:
       - compute_path
@@ -45,7 +45,7 @@ bt_navigator:
 controller_server:
   ros__parameters:
     use_sim_time: false
-    controller_frequency: 10.0 # 20.0
+    controller_frequency: 10.0
     min_x_velocity_threshold: 0.05
     min_y_velocity_threshold: 0.05
     min_theta_velocity_threshold: 0.15

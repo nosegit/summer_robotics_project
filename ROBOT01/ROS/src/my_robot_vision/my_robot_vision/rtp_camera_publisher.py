@@ -60,7 +60,7 @@ class RtpCameraPublisher(Node):
         
         # OPTIMIZED PIPELINE:
         # 1. udpsrc buffer-size increased to prevent packet drops if the OS scheduler blips
-        # 2. videoconvert n-threads=2 parallelizes the CPU-heavy BGR color conversion
+        # 2. Decode to one-channel grayscale; ArUco does not require colour.
         # 3. avdec_h264 is used (Software). See note below if running this on the Pi!
         pipeline = (
             f'udpsrc port={self.port} buffer-size=524288 '
@@ -70,7 +70,7 @@ class RtpCameraPublisher(Node):
             # frames. One decoder thread is lower latency for this 640x480 feed.
             'rtph264depay ! h264parse ! avdec_h264 max-threads=1 ! '
             'queue max-size-buffers=1 max-size-bytes=0 max-size-time=0 leaky=downstream ! '
-            'videoconvert n-threads=2 ! video/x-raw,format=BGR ! '
+            'videoconvert n-threads=2 ! video/x-raw,format=GRAY8 ! '
             'appsink name=framesink emit-signals=true sync=false max-buffers=1 drop=true'
         )
         
@@ -127,12 +127,16 @@ class RtpCameraPublisher(Node):
             return Gst.FlowReturn.ERROR
         try:
             # .copy() is vital here so we can unmap the GStreamer buffer immediately
-            image_array = np.frombuffer(mapped.data, dtype=np.uint8).reshape((height, width, 3))
+            image_array = np.frombuffer(
+                mapped.data, dtype=np.uint8, count=height * width
+            ).reshape((height, width))
             if self.rotate_180:
                 # The physical camera is mounted upside down. Flipping both
                 # image axes is exactly a 180-degree image-plane rotation.
                 image_array = image_array[::-1, ::-1]
-            image = self.bridge.cv2_to_imgmsg(image_array.copy(), encoding='bgr8')
+            image = self.bridge.cv2_to_imgmsg(
+                image_array.copy(), encoding='mono8'
+            )
             image.header.stamp = self.get_clock().now().to_msg()
             image.header.frame_id = self.frame_id
             self.camera_info.header = image.header

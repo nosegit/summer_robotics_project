@@ -2,6 +2,10 @@
 
 Camera drivers and vision pipelines for the mecanum robot.
 
+The camera topics use `mono8` grayscale images end-to-end. ArUco processing
+does not require colour, and avoiding RGB/BGR conversion reduces CPU use and
+ROS image bandwidth.
+
 **Core Topics:**
 - `/camera/image_raw` (`sensor_msgs/msg/Image`)
 - `/camera/camera_info` (`sensor_msgs/msg/CameraInfo`)
@@ -17,7 +21,7 @@ colcon build --packages-select my_robot_vision
 source install/setup.bash
 
 # Launch with optional parameter overrides
-ros2 launch my_robot_vision pi_camera.launch.py width:=640 height:=480 fps:=30.0
+ros2 launch my_robot_vision pi_camera.launch.py width:=640 height:=480 fps:=10.0
 
 ```
 
@@ -30,7 +34,7 @@ Picamera2 requires host-level access to the Pi's libcamera stack and cannot run 
 ```bash
 sudo apt install python3-picamera2
 # Usage: python3 stream_picamera_rtp.py <IP> <PORT>
-python3 scripts/stream_picamera_rtp.py 127.0.0.1 5600
+python3 scripts/stream_picamera_rtp.py 127.0.0.1 5600 --fps 10
 
 ```
 

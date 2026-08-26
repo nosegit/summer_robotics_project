@@ -16,7 +16,7 @@ class PiCameraPublisher(Node):
         super().__init__('pi_camera_publisher')
         self.declare_parameter('width', 640)
         self.declare_parameter('height', 480)
-        self.declare_parameter('fps', 30.0)
+        self.declare_parameter('fps', 10.0)
         self.declare_parameter('camera_info_url', '')
         self.declare_parameter('frame_id', 'camera_optical_frame')
 
@@ -40,7 +40,7 @@ class PiCameraPublisher(Node):
         frame_duration_us = round(1_000_000 / fps)
         self.camera = Picamera2()
         configuration = self.camera.create_video_configuration(
-            main={'size': (self.width, self.height), 'format': 'RGB888'},
+            main={'size': (self.width, self.height), 'format': 'YUV420'},
             controls={'FrameDurationLimits': (frame_duration_us, frame_duration_us)},
             buffer_count=2,
             queue=False,
@@ -94,7 +94,11 @@ class PiCameraPublisher(Node):
 
     def _publish_frame(self):
         frame = self.camera.capture_array('main')
-        image = self.bridge.cv2_to_imgmsg(frame, encoding='rgb8')
+        # The first height rows of YUV420 are the full-resolution luminance
+        # plane. Publish them directly instead of converting to three-channel
+        # RGB, since ArUco detection only needs intensity.
+        grayscale = frame[:self.height, :self.width]
+        image = self.bridge.cv2_to_imgmsg(grayscale, encoding='mono8')
         image.header.stamp = self.get_clock().now().to_msg()
         image.header.frame_id = self.frame_id
         self.camera_info.header = image.header

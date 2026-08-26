@@ -139,7 +139,7 @@ class ArucoPoseEstimator(Node):
                 self.get_logger().warning('Waiting for CameraInfo...')
                 self.camera_info_warning_emitted = True
             return
-        marker_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+        marker_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='mono8')
         cube_image = marker_image.copy() if self.debug_image else None
         if self.detector is not None:
             corners, ids, _ = self.detector.detectMarkers(marker_image)
@@ -255,7 +255,7 @@ class ArucoPoseEstimator(Node):
         self.cube_detection_pub.publish(message)
 
     def _publish_debug_image(self, publisher, image, header):
-        message = self.bridge.cv2_to_imgmsg(image, encoding='bgr8')
+        message = self.bridge.cv2_to_imgmsg(image, encoding='mono8')
         message.header = header
         publisher.publish(message)
 
