@@ -28,8 +28,9 @@ class ParcelMission(Node):
         r'(?:\(\s*(-?\d+)\s*\))?$'
     )
 
-    def __init__(self, config):
+    def __init__(self, config, show_feedback=False):
         super().__init__('parcel_mission')
+        self._show_feedback = show_feedback
         self._configured = bool(config.get('mission_configured', False))
         self._start_pose = self._validate_pose(
             config.get('start_pose'), 'start_pose'
@@ -132,6 +133,7 @@ class ParcelMission(Node):
             if match is None:
                 raise ValueError(f'Invalid mission command: {text!r}')
             name, argument = match.groups()
+            argument = None if argument is None else int(argument)
             no_argument_commands = {
                 'set_initial_pose', 'rotate_blind', 'idle',
                 'open_gripper', 'pickup', 'led_blink', 'led_red',
@@ -149,7 +151,7 @@ class ParcelMission(Node):
                 raise ValueError('wait requires a duration in seconds')
             if name == 'wait' and argument < 0:
                 raise ValueError('wait duration must be non-negative')
-            parsed.append((text, name, None if argument is None else int(argument)))
+            parsed.append((text, name, argument))
 
         missing_poses = sorted({
             argument for _, name, argument in parsed
@@ -206,8 +208,13 @@ class ParcelMission(Node):
         while rclpy.ok() and time.monotonic() < end_time:
             rclpy.spin_once(self, timeout_sec=min(0.1, end_time - time.monotonic()))
 
-    def _run_action(self, client, goal, name):
-        send_future = client.send_goal_async(goal)
+    def _run_action(self, client, goal, name, feedback_name=None):
+        feedback_callback = None
+        if self._show_feedback and feedback_name is not None:
+            feedback_callback = self._feedback_callback(feedback_name)
+        send_future = client.send_goal_async(
+            goal, feedback_callback=feedback_callback
+        )
         rclpy.spin_until_future_complete(self, send_future)
         handle = send_future.result()
         if handle is None or not handle.accepted:
@@ -219,6 +226,16 @@ class ParcelMission(Node):
             status = None if wrapped_result is None else wrapped_result.status
             raise RuntimeError(f'{name} failed with action status {status}')
         return wrapped_result.result
+
+    def _feedback_callback(self, stage):
+        def callback(message):
+            feedback = message.feedback
+            values = ', '.join(
+                f'{field}={getattr(feedback, field)}'
+                for field in feedback.get_fields_and_field_types()
+            )
+            self.get_logger().info(f'{stage} feedback: {values}')
+        return callback
 
     def _run_gripper_sequence(self, client, sequence_name):
         self.get_logger().info(f'Starting gripper {sequence_name} sequence')
@@ -301,7 +318,10 @@ class ParcelMission(Node):
     def _search_for_parcel(self, marker_id):
         self._wait_for_server(self._search, 'search_parcel')
         result = self._run_action(
-            self._search, SearchParcel.Goal(marker_id=marker_id), 'parcel search'
+            self._search,
+            SearchParcel.Goal(marker_id=marker_id),
+            'parcel search',
+            feedback_name='search',
         )
         if not result.success:
             raise RuntimeError(f'parcel search failed: {result.message}')
@@ -309,7 +329,10 @@ class ParcelMission(Node):
     def _servo_to_parcel(self, marker_id):
         self._wait_for_server(self._servo, 'servo_parcel')
         result = self._run_action(
-            self._servo, ServoParcel.Goal(marker_id=marker_id), 'parcel docking'
+            self._servo,
+            ServoParcel.Goal(marker_id=marker_id),
+            'parcel docking',
+            feedback_name='servo',
         )
         if not result.success:
             raise RuntimeError(f'parcel docking failed: {result.message}')
@@ -320,6 +343,7 @@ class ParcelMission(Node):
             self._rotate,
             RotateBlind.Goal(angle=self._pickup_rotation),
             'parcel pickup positioning',
+            feedback_name='rotate',
         )
         if not result.success:
             raise RuntimeError(f'parcel pickup failed: {result.message}')
@@ -389,6 +413,10 @@ def main(args=None):
     )
     parser = argparse.ArgumentParser(description='Run a parcel mission')
     parser.add_argument('--mission-file', default=default_config)
+    parser.add_argument(
+        '--feedback', action='store_true',
+        help='Print feedback from parcel search, servo, and rotate actions',
+    )
     parsed, ros_args = parser.parse_known_args(
         sys.argv[1:] if args is None else args
     )
@@ -400,7 +428,7 @@ def main(args=None):
     node = None
     exit_code = 0
     try:
-        node = ParcelMission(config)
+        node = ParcelMission(config, show_feedback=parsed.feedback)
         node.run()
     except (KeyboardInterrupt, rclpy.executors.ExternalShutdownException):
         pass

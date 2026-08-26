@@ -104,6 +104,17 @@ ros2 run my_robot_mission parcel_mission --mission-file /root/ros2_ws/src/my_rob
 
 ```
 
+Add `--feedback` to print live parcel-search, servoing, and rotation feedback:
+
+```bash
+ros2 run my_robot_mission parcel_mission \
+  --mission-file /root/ros2_ws/src/my_robot_mission/config/mission.yaml \
+  --feedback
+```
+
+During servoing this reports `x_error`, `y_error`, and `yaw_error` as the robot
+approaches the parcel.
+
 The default configuration is disabled so its example coordinates cannot move a
 real robot accidentally. Once enabled, the initial pose is published
 automatically on every mission start. Only use this on a robot that is

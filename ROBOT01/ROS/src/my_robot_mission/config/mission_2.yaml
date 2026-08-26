@@ -1,11 +1,6 @@
 # Set this to true only after measuring and checking every pose.
 mission_configured: true
 
-doors:
-  0: {host: 192.168.1.100, port: 50000}
-  1: {host: 192.168.1.101, port: 50000}
-
-
 # All poses are [x metres, y metres, yaw radians] in the map frame.
 start_pose: [-1.0, -6.0, 3.14]
 # start_pose: [-0.0, -0.0, 3.14]
@@ -20,6 +15,8 @@ poses:
 # Commands are executed from top to bottom. Commands may be reordered,
 # omitted or repeated. Gripper movements occur only when listed explicitly.
 commands:
+  - close_door(0)
+  - close_door(1)
   - idle
   - led_blink
   - set_initial_pose
@@ -32,7 +29,7 @@ commands:
   - pickup
   - navigate_to_pose(2)
   - open_door(0)
-  - wait(10.0)
+  - wait(10)
   - navigate_to_pose(3)
   - close_door(0)
   - led_green
@@ -40,7 +37,7 @@ commands:
 # UDP endpoints for the two door controllers. Replace these example addresses
 # before adding open_door(N) or close_door(N) to the command list.
 doors:
-  0: {host: 192.168.1.100, port: 50000}
+  0: {host: 144.32.70.229, port: 50000}
   1: {host: 192.168.1.101, port: 50000}
 
 pickup_rotation: 1.5708
