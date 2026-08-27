@@ -11,9 +11,9 @@
 
 /*
 ARB_L : USB (1)
-ARB_R : serial (0)
+ARB_R : USB (1)
 */
-#define ENABLEUSBSERIAL 0
+#define ENABLEUSBSERIAL 1
 
 #define MOTORDIRA P0_4
 #define MOTORDIRB P0_5

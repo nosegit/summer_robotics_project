@@ -1,0 +1,25 @@
+name: robotics
+root: /home/pi/summer_robotics_project/ROBOT01/ROS # Change this to your actual project folder path if needed
+
+# These commands run sequentially in the background before the Tmux session attaches
+on_project_start:
+  - sudo docker compose up server_dev -d
+  # Removed -it since this runs in the background without a terminal attached
+  - sudo docker exec jazzy_server_dev bash -c "colcon build --symlink-install"
+
+windows:
+  - dev_environment:
+      # Your custom saved layout
+      layout: 3905,236x64,0,0{117x64,0,0,1,118x64,118,0[118x32,118,0{87x32,118,0,2,30x32,206,0,4},118x31,118,33,3]}
+      panes:
+        - # Pane 0 (Left Main)
+          - sudo docker exec -it jazzy_server_dev bash
+          - source install/setup.bash
+          - ros2 launch my_robot_bringup hardware.launch.py
+        - # Pane 1 (Right Top-Left)
+          - python summer_robotics_project/ROBOT01/ROS/scripts/stream_picamera_rtp.py
+        - # Pane 2 (Right Top-Right)
+          - htop
+        - # Pane 3 (Right Bottom)
+          - sudo docker exec -it jazzy_server_dev bash
+          - source install/setup.bash

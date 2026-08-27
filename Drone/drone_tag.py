@@ -20,9 +20,9 @@ drone = robot.Drone()
 drone.initialize()
 flight = drone.flight
 camera = drone.camera
-targetId = 10
-tagSizeCm = 10
-focalLength = 836
+targetId = 3
+tagSizeCm = 7.5
+focalLength = 890
 droneHeight = 0
 markerFound = False
 lastTargetLoc = (-1, -1, -1, -1, -1)
@@ -43,7 +43,7 @@ flipCode = 1
 # Verify empirically: place the tag clearly ahead of the drone and check that
 # fDist comes out positive, then place it clearly left and check lDist positive.
 imageYToForward = -1
-imageXToLeft = -1
+imageXToLeft = 1
 
 arucoDict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100)
 
@@ -256,7 +256,7 @@ def searchSpace():
         if markerFound:
             break
 
-        n_forward = 5
+        n_forward = 6
         for j in range(n_forward if (i==0) else n_forward//2):
             if markerFound:
                 break
