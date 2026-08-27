@@ -1,0 +1,12 @@
+name: drone-robomaster
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.7
+  - pip
+  - pip:
+      - numpy==1.21.6
+      - opencv-contrib-python==4.7.0.72
+      - robomaster
