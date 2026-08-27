@@ -76,6 +76,36 @@ stack.
 Commands can be reordered, omitted, or repeated. The complete command list and
 all referenced poses are validated before robot motion starts.
 
+## Drone-selected parcel row
+
+Set a reusable parcel ID and select a fixed staging pose from filtered drone
+detections:
+
+```yaml
+parcel_id: 6
+poses:
+  parcel_left: [-3.0, -3.50, 1.57]
+  parcel_right: [-3.0, -6.85, 1.57]
+drone_parcel:
+  topic: /drone/parcel_detections
+  observation_timeout: 3.0
+  minimum_confidence: 0.7
+  sample_count: 5
+  zone_boundary_y: -4.0
+  boundary_margin: 0.3
+  upper_staging_pose: parcel_left
+  lower_staging_pose: parcel_right
+commands:
+  - navigate_to_drone_parcel(parcel_id)
+  - search_parcel(parcel_id)
+  - servo_parcel(parcel_id)
+```
+
+The drone topic uses `vision_msgs/msg/Detection3DArray` in the `map` frame.
+Each result supplies the marker ID in `hypothesis.class_id`, confidence in
+`hypothesis.score`, and map Y coordinate in `pose.pose.position.y`. A literal
+integer can replace `parcel_id` in any command for a one-off override.
+
 Build the mission package from the ROS workspace/container:
 
 ```bash

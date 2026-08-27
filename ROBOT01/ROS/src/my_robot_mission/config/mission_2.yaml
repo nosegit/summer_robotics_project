@@ -1,5 +1,6 @@
 # Set this to true only after measuring and checking every pose.
 mission_configured: true
+parcel_id: 6
 
 # All poses are [x metres, y metres, yaw radians] in the map frame.
 start_pose: [-1.0, -6.0, 3.14]
@@ -10,6 +11,16 @@ poses:
   parcel_left: [-3.0, -3.50, 1.57] # parcel left start point
   door_0_aim_door: [-1.5, -4.0, 0.0] # door 0.5m far
   door_1_aim_door: [1.0, -6.0, 0.0] # door 2
+
+drone_parcel:
+  topic: /drone/parcel_detections
+  observation_timeout: 3.0
+  minimum_confidence: 0.7
+  sample_count: 5
+  zone_boundary_y: -4.0
+  boundary_margin: 0.3
+  upper_staging_pose: parcel_left
+  lower_staging_pose: parcel_right
 
 
 
@@ -23,8 +34,9 @@ commands:
   - set_initial_pose
   - navigate_to_pose(door_0_aim_away)
   - navigate_to_pose(parcel_left)
-  - search_parcel(6)
-  - servo_parcel(6)
+  # - navigate_to_drone_parcel(parcel_id)
+  - search_parcel(parcel_id)
+  - servo_parcel(parcel_id)
   # - open_gripper
   - rotate_blind
   # - pickup

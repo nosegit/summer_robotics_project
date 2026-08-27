@@ -1,437 +1,123 @@
+"""Top-level orchestration for YAML-defined parcel missions."""
+
 import argparse
-import math
 import os
-import re
-import socket
 import sys
-import time
 
 import rclpy
-import yaml
 from ament_index_python.packages import get_package_share_directory
-from action_msgs.msg import GoalStatus
-from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
-from my_robot_parcel_aquisition.action import RotateBlind, SearchParcel, ServoParcel
-from nav2_msgs.action import NavigateToPose
-from rclpy.action import ActionClient
 from rclpy.node import Node
-from std_srvs.srv import Trigger
+
+from .utils.action_utils import ActionRunner
+from .utils.door_utils import DoorClient
+from .utils.drone_utils import DroneParcelSelector
+from .utils.nav_utils import NavigationClient
+from .utils.parcel_utils import ParcelAcquisitionClient
+from .utils.service_utils import GripperClient, MissionLedClient
+from .utils.yaml_utils import load_mission_file, parse_mission_config
 
 
 class ParcelMission(Node):
-    """Execute the command list from a mission YAML file."""
-
-    COMMAND_PATTERN = re.compile(
-        r'^(set_initial_pose|navigate_to_pose|acquire_parcel|search_parcel|'
-        r'servo_parcel|rotate_blind|idle|open_gripper|pickup|open_door|'
-        r'close_door|wait|led_blink|led_red|led_green|led_off)'
-        r'(?:\(\s*([A-Za-z_][A-Za-z0-9_-]*|-?\d+)\s*\))?$'
-    )
+    """Execute validated mission commands through subsystem clients."""
 
     def __init__(self, config, show_feedback=False):
         super().__init__('parcel_mission')
-        self._show_feedback = show_feedback
-        self._configured = bool(config.get('mission_configured', False))
-        self._start_pose = self._validate_pose(
-            config.get('start_pose'), 'start_pose'
+        self.config = (
+            config if hasattr(config, 'commands') else parse_mission_config(config)
         )
-        raw_poses = config.get('poses', {})
-        if not isinstance(raw_poses, dict):
-            raise ValueError(
-                'poses must be a YAML mapping of name or ID to [x, y, yaw]'
+        self.actions = ActionRunner(
+            self, self.config.server_timeout, show_feedback
+        )
+        self.navigation = NavigationClient(self, self.config, self.actions)
+        self.parcel = ParcelAcquisitionClient(
+            self, self.actions, self.config.pickup_rotation
+        )
+        self.gripper = GripperClient(self, self.config.server_timeout)
+        self.led = MissionLedClient(self, self.config.server_timeout)
+        self.doors = DoorClient(self, self.config.doors)
+        self.drone = None
+        if self.config.drone_parcel is not None:
+            self.drone = DroneParcelSelector(
+                self,
+                self.config.drone_parcel,
+                self.config.map_frame,
+                self.config.server_timeout,
             )
-        self._poses = {
-            self._normalize_pose_key(pose_id): self._validate_pose(
-                values, f'poses[{pose_id}]'
-            )
-            for pose_id, values in raw_poses.items()
-        }
-        self._commands = self._parse_commands(config.get('commands'))
-        self._pickup_rotation = float(config.get('pickup_rotation', -1.5708))
-        self._initial_pose_publish_count = int(
-            config.get('initial_pose_publish_count', 5)
-        )
-        self._initial_pose_publish_period = float(
-            config.get('initial_pose_publish_period', 0.5)
-        )
-        self._localization_settle_time = float(
-            config.get('localization_settle_time', 2.0)
-        )
-        self._server_timeout = float(config.get('server_timeout', 60.0))
-        self._map_frame = str(config.get('map_frame', 'map'))
-        raw_doors = config.get('doors', {})
-        if not isinstance(raw_doors, dict):
-            raise ValueError('doors must be a YAML mapping of door IDs')
-        self._doors = {
-            int(door_id): self._validate_door(values, door_id)
-            for door_id, values in raw_doors.items()
-        }
-        missing_doors = sorted({
-            argument for _, name, argument in self._commands
-            if name in {'open_door', 'close_door'}
-            and argument not in self._doors
-        })
-        if missing_doors:
-            raise ValueError(
-                f'Commands reference undefined door IDs: {missing_doors}'
-            )
-        self._initial_pose_publisher = self.create_publisher(
-            PoseWithCovarianceStamped, '/initialpose', 10
-        )
-        self._navigate = ActionClient(self, NavigateToPose, 'navigate_to_pose')
-        self._search = ActionClient(self, SearchParcel, 'search_parcel')
-        self._servo = ActionClient(self, ServoParcel, 'servo_parcel')
-        self._rotate = ActionClient(self, RotateBlind, 'rotate_blind')
-        self._gripper_idle = self.create_client(
-            Trigger, '/gripper_controller/idle'
-        )
-        self._gripper_pickup = self.create_client(
-            Trigger, '/gripper_controller/pickup'
-        )
-        self._gripper_open = self.create_client(
-            Trigger, '/gripper_controller/open_gripper'
-        )
-        self._gripper_status = self.create_client(
-            Trigger, '/gripper_controller/status'
-        )
-        self._led_blink = self.create_client(
-            Trigger, '/mission_led_controller/start_blinking'
-        )
-        self._led_solid_red = self.create_client(
-            Trigger, '/mission_led_controller/solid_red'
-        )
-        self._led_solid_green = self.create_client(
-            Trigger, '/mission_led_controller/solid_green'
-        )
-        self._led_off = self.create_client(
-            Trigger, '/mission_led_controller/off'
-        )
 
-    @staticmethod
-    def _validate_pose(value, name):
-        if not isinstance(value, (list, tuple)):
-            raise ValueError(f'{name} must be [x, y, yaw]')
-        values = list(value)
-        if len(values) != 3 or not all(math.isfinite(float(value)) for value in values):
-            raise ValueError(f'{name} must contain three finite values: [x, y, yaw]')
-        return tuple(float(value) for value in values)
-
-    @staticmethod
-    def _normalize_pose_key(value):
-        """Keep named poses as strings while preserving numeric-ID support."""
-        text = str(value).strip()
-        if re.fullmatch(r'-?\d+', text):
-            return int(text)
-        if not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_-]*', text):
-            raise ValueError(
-                f'Invalid pose name {text!r}; use letters, numbers, _ or -'
-            )
-        return text
-
-    @staticmethod
-    def _validate_door(value, door_id):
-        if not isinstance(value, dict) or not value.get('host'):
-            raise ValueError(f'doors[{door_id}] must contain a host')
-        port = int(value.get('port', 50000))
-        if not 1 <= port <= 65535:
-            raise ValueError(
-                f'doors[{door_id}].port must be between 1 and 65535'
-            )
-        return str(value['host']), port
-
-    def _parse_commands(self, commands):
-        if not isinstance(commands, list) or not commands:
-            raise ValueError('commands must be a non-empty YAML list')
-        parsed = []
-        for command in commands:
-            text = str(command).strip()
-            match = self.COMMAND_PATTERN.fullmatch(text)
-            if match is None:
-                raise ValueError(f'Invalid mission command: {text!r}')
-            name, argument_text = match.groups()
-            no_argument_commands = {
-                'set_initial_pose', 'rotate_blind', 'idle',
-                'open_gripper', 'pickup', 'led_blink', 'led_red',
-                'led_green', 'led_off',
-            }
-            required_argument_commands = {
-                'navigate_to_pose', 'acquire_parcel',
-                'search_parcel', 'servo_parcel', 'open_door', 'close_door',
-            }
-            if name in no_argument_commands and argument_text is not None:
-                raise ValueError(f'{name} does not accept an argument')
-            if name in required_argument_commands and argument_text is None:
-                expected = 'pose name or ID' if name == 'navigate_to_pose' else 'integer argument'
-                raise ValueError(f'{name} requires a {expected}')
-            if name == 'wait' and argument_text is None:
-                raise ValueError('wait requires a duration in seconds')
-
-            argument = None
-            if argument_text is not None:
-                if name == 'navigate_to_pose':
-                    argument = self._normalize_pose_key(argument_text)
-                else:
-                    try:
-                        argument = int(argument_text)
-                    except ValueError as error:
-                        raise ValueError(
-                            f'{name} requires an integer argument, got '
-                            f'{argument_text!r}'
-                        ) from error
-            if name == 'wait' and argument < 0:
-                raise ValueError('wait duration must be non-negative')
-            parsed.append((text, name, argument))
-
-        missing_poses = {
-            argument for _, name, argument in parsed
-            if name == 'navigate_to_pose' and argument not in self._poses
-        }
-        if missing_poses:
-            names = sorted((repr(value) for value in missing_poses))
-            raise ValueError(f'Commands reference undefined poses: {names}')
-        return parsed
-
-    @staticmethod
-    def _orientation(yaw):
-        half_yaw = yaw * 0.5
-        return math.sin(half_yaw), math.cos(half_yaw)
-
-    def _pose_stamped(self, values):
-        pose = PoseStamped()
-        pose.header.frame_id = self._map_frame
-        pose.header.stamp = self.get_clock().now().to_msg()
-        pose.pose.position.x = values[0]
-        pose.pose.position.y = values[1]
-        pose.pose.orientation.z, pose.pose.orientation.w = self._orientation(values[2])
-        return pose
-
-    def _wait_for_server(self, client, name):
-        self.get_logger().info(f'Waiting for {name} action server...')
-        if not client.wait_for_server(timeout_sec=self._server_timeout):
-            raise RuntimeError(f'{name} action server is unavailable')
-
-    def _set_initial_pose(self):
-        message = PoseWithCovarianceStamped()
-        message.header.frame_id = self._map_frame
-        message.pose.pose = self._pose_stamped(self._start_pose).pose
-        # AMCL convention: uncertainty in x, y, and yaw.
-        message.pose.covariance[0] = 0.25
-        message.pose.covariance[7] = 0.25
-        message.pose.covariance[35] = 0.0685
-        count = self._initial_pose_publish_count
-        period = self._initial_pose_publish_period
-        if count < 1 or period < 0.0:
-            raise ValueError('Initial-pose publish count must be positive and period non-negative')
+    def _navigate_to_drone_parcel(self, marker_id):
+        pose_key, median_y = self.drone.select_staging_pose(marker_id)
         self.get_logger().info(
-            f'Setting fixed initial pose to {self._start_pose} in {self._map_frame}'
+            f'Drone selected {pose_key!r} for marker {marker_id} '
+            f'(median map y={median_y:.3f})'
         )
-        for _ in range(count):
-            message.header.stamp = self.get_clock().now().to_msg()
-            self._initial_pose_publisher.publish(message)
-            end_time = time.monotonic() + period
-            while rclpy.ok() and time.monotonic() < end_time:
-                rclpy.spin_once(
-                    self, timeout_sec=min(0.1, end_time - time.monotonic())
-                )
-        settle_time = self._localization_settle_time
-        end_time = time.monotonic() + max(0.0, settle_time)
-        while rclpy.ok() and time.monotonic() < end_time:
-            rclpy.spin_once(self, timeout_sec=min(0.1, end_time - time.monotonic()))
-
-    def _run_action(self, client, goal, name, feedback_name=None):
-        feedback_callback = None
-        if self._show_feedback and feedback_name is not None:
-            feedback_callback = self._feedback_callback(feedback_name)
-        send_future = client.send_goal_async(
-            goal, feedback_callback=feedback_callback
+        self.navigation.navigate_to(
+            self.config.poses[pose_key],
+            f'drone-selected parcel staging pose {pose_key}',
         )
-        rclpy.spin_until_future_complete(self, send_future)
-        handle = send_future.result()
-        if handle is None or not handle.accepted:
-            raise RuntimeError(f'{name} goal was rejected')
-        result_future = handle.get_result_async()
-        rclpy.spin_until_future_complete(self, result_future)
-        wrapped_result = result_future.result()
-        if wrapped_result is None or wrapped_result.status != GoalStatus.STATUS_SUCCEEDED:
-            status = None if wrapped_result is None else wrapped_result.status
-            raise RuntimeError(f'{name} failed with action status {status}')
-        return wrapped_result.result
 
-    def _feedback_callback(self, stage):
-        def callback(message):
-            feedback = message.feedback
-            values = ', '.join(
-                f'{field}={getattr(feedback, field)}'
-                for field in feedback.get_fields_and_field_types()
+    def _execute(self, command):
+        name = command.name
+        argument = command.argument
+        if name == 'set_initial_pose':
+            self.navigation.set_initial_pose()
+        elif name == 'navigate_to_pose':
+            self.navigation.navigate_to(
+                self.config.poses[argument], f'pose {argument}'
             )
-            self.get_logger().info(f'{stage} feedback: {values}')
-        return callback
-
-    def _run_gripper_sequence(self, client, sequence_name):
-        self.get_logger().info(f'Starting gripper {sequence_name} sequence')
-        if not client.wait_for_service(timeout_sec=self._server_timeout):
-            raise RuntimeError(
-                f'gripper {sequence_name} service is unavailable'
-            )
-        if not self._gripper_status.wait_for_service(
-            timeout_sec=self._server_timeout
-        ):
-            raise RuntimeError('gripper status service is unavailable')
-
-        future = client.call_async(Trigger.Request())
-        rclpy.spin_until_future_complete(self, future)
-        response = future.result()
-        if response is None or not response.success:
-            message = 'no response' if response is None else response.message
-            raise RuntimeError(
-                f'gripper {sequence_name} was rejected: {message}'
-            )
-
-        deadline = time.monotonic() + self._server_timeout
-        while rclpy.ok() and time.monotonic() < deadline:
-            status_future = self._gripper_status.call_async(Trigger.Request())
-            rclpy.spin_until_future_complete(self, status_future)
-            status = status_future.result()
-            if status is not None and status.success:
-                self.get_logger().info(
-                    f'Gripper {sequence_name} sequence completed'
-                )
-                return
-            time.sleep(0.05)
-        raise RuntimeError(f'gripper {sequence_name} sequence timed out')
-
-    def _set_mission_led(self, client, state_name):
-        if not client.wait_for_service(timeout_sec=self._server_timeout):
-            raise RuntimeError(f'mission LED {state_name} service is unavailable')
-        future = client.call_async(Trigger.Request())
-        rclpy.spin_until_future_complete(self, future)
-        response = future.result()
-        if response is None or not response.success:
-            message = 'no response' if response is None else response.message
-            raise RuntimeError(f'failed to set mission LED {state_name}: {message}')
-
-    def _send_door_command(self, door_id, command):
-        destination = self._doors[door_id]
-        self.get_logger().info(
-            f'Sending door {door_id} command {command!r} to '
-            f'{destination[0]}:{destination[1]}'
-        )
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
-                udp_socket.sendto(command.encode('ascii'), destination)
-        except OSError as error:
-            raise RuntimeError(
-                f'failed to send door {door_id} command {command!r}: {error}'
-            ) from error
-
-    def _wait(self, seconds):
-        self.get_logger().info(f'Waiting for {seconds} seconds')
-        end_time = time.monotonic() + seconds
-        while rclpy.ok() and time.monotonic() < end_time:
-            rclpy.spin_once(
-                self, timeout_sec=min(0.1, end_time - time.monotonic())
-            )
-
-    def _navigate_to(self, pose, name):
-        self.get_logger().info(f'Navigating to {name}: {pose}')
-        goal = NavigateToPose.Goal()
-        goal.pose = self._pose_stamped(pose)
-        self._run_action(self._navigate, goal, f'navigation to {name}')
-        self.get_logger().info(f'Arrived at {name}')
-
-    def _acquire_parcel(self, marker_id):
-        self._search_for_parcel(marker_id)
-        self._servo_to_parcel(marker_id)
-        self._rotate_for_pickup()
-        self.get_logger().info('Parcel acquisition positioning complete')
-
-    def _search_for_parcel(self, marker_id):
-        self._wait_for_server(self._search, 'search_parcel')
-        result = self._run_action(
-            self._search,
-            SearchParcel.Goal(marker_id=marker_id),
-            'parcel search',
-            feedback_name='search',
-        )
-        if not result.success:
-            raise RuntimeError(f'parcel search failed: {result.message}')
-
-    def _servo_to_parcel(self, marker_id):
-        self._wait_for_server(self._servo, 'servo_parcel')
-        result = self._run_action(
-            self._servo,
-            ServoParcel.Goal(marker_id=marker_id),
-            'parcel docking',
-            feedback_name='servo',
-        )
-        if not result.success:
-            raise RuntimeError(f'parcel docking failed: {result.message}')
-
-    def _rotate_for_pickup(self):
-        self._wait_for_server(self._rotate, 'rotate_blind')
-        result = self._run_action(
-            self._rotate,
-            RotateBlind.Goal(angle=self._pickup_rotation),
-            'parcel pickup positioning',
-            feedback_name='rotate',
-        )
-        if not result.success:
-            raise RuntimeError(f'parcel pickup failed: {result.message}')
+        elif name == 'navigate_to_drone_parcel':
+            self._navigate_to_drone_parcel(argument)
+        elif name == 'acquire_parcel':
+            self.parcel.acquire(argument)
+        elif name == 'search_parcel':
+            self.parcel.search(argument)
+        elif name == 'servo_parcel':
+            self.parcel.servo(argument)
+        elif name == 'rotate_blind':
+            self.parcel.rotate()
+        elif name in {'idle', 'open_gripper', 'pickup'}:
+            self.gripper.run(name)
+        elif name == 'open_door':
+            self.doors.send(argument, 'open')
+        elif name == 'close_door':
+            self.doors.send(argument, 'close')
+        elif name == 'wait':
+            self.navigation.wait(argument)
+        elif name == 'led_blink':
+            self.led.set('blinking')
+        elif name == 'led_red':
+            self.led.set('solid red')
+        elif name == 'led_green':
+            self.led.set('solid green')
+        elif name == 'led_off':
+            self.led.set('off')
 
     def run(self):
-        if not self._configured:
+        if not self.config.configured:
             raise RuntimeError(
                 'mission_configured is false; set safe measured poses in '
                 'mission.yaml before enabling the mission'
             )
-        command_text = [command[0] for command in self._commands]
-        self.get_logger().info(f'Mission: {" -> ".join(command_text)}')
-        self._set_mission_led(self._led_blink, 'blinking')
-        if any(name == 'navigate_to_pose' for _, name, _ in self._commands):
-            self._wait_for_server(self._navigate, 'navigate_to_pose')
-
-        for index, (text, name, argument) in enumerate(self._commands, start=1):
-            self.get_logger().info(
-                f'Running command {index}/{len(self._commands)}: {text}'
+        self.get_logger().info(
+            'Mission: ' + ' -> '.join(
+                command.text for command in self.config.commands
             )
-            if name == 'set_initial_pose':
-                self._set_initial_pose()
-            elif name == 'navigate_to_pose':
-                self._navigate_to(self._poses[argument], f'pose {argument}')
-            elif name == 'acquire_parcel':
-                self._acquire_parcel(argument)
-            elif name == 'search_parcel':
-                self._search_for_parcel(argument)
-            elif name == 'servo_parcel':
-                self._servo_to_parcel(argument)
-            elif name == 'rotate_blind':
-                self._rotate_for_pickup()
-            elif name == 'idle':
-                self._run_gripper_sequence(self._gripper_idle, 'idle')
-            elif name == 'open_gripper':
-                self._run_gripper_sequence(
-                    self._gripper_open, 'open_gripper'
-                )
-            elif name == 'pickup':
-                self._run_gripper_sequence(self._gripper_pickup, 'pickup')
-            elif name == 'open_door':
-                self._send_door_command(argument, 'open')
-            elif name == 'close_door':
-                self._send_door_command(argument, 'close')
-            elif name == 'wait':
-                self._wait(argument)
-            elif name == 'led_blink':
-                self._set_mission_led(self._led_blink, 'blinking')
-            elif name == 'led_red':
-                self._set_mission_led(self._led_solid_red, 'solid red')
-            elif name == 'led_green':
-                self._set_mission_led(
-                    self._led_solid_green, 'solid green'
-                )
-            elif name == 'led_off':
-                self._set_mission_led(self._led_off, 'off')
+        )
+        self.led.set('blinking')
+        navigation_commands = {'navigate_to_pose', 'navigate_to_drone_parcel'}
+        if any(
+            command.name in navigation_commands
+            for command in self.config.commands
+        ):
+            self.navigation.wait_until_ready()
 
-        self._set_mission_led(self._led_solid_red, 'solid red')
+        total = len(self.config.commands)
+        for index, command in enumerate(self.config.commands, start=1):
+            self.get_logger().info(
+                f'Running command {index}/{total}: {command.text}'
+            )
+            self._execute(command)
+
+        self.led.set('solid red')
         self.get_logger().info('Mission complete')
 
 
@@ -450,10 +136,7 @@ def main(args=None):
     parsed, ros_args = parser.parse_known_args(
         sys.argv[1:] if args is None else args
     )
-    with open(parsed.mission_file, encoding='utf-8') as config_stream:
-        config = yaml.safe_load(config_stream)
-    if not isinstance(config, dict):
-        raise ValueError('Mission file must contain a YAML mapping')
+    config = load_mission_file(parsed.mission_file)
     rclpy.init(args=ros_args)
     node = None
     exit_code = 0
@@ -462,7 +145,7 @@ def main(args=None):
         node.run()
     except (KeyboardInterrupt, rclpy.executors.ExternalShutdownException):
         pass
-    except Exception as error:  # Return failure and make the cause visible.
+    except Exception as error:
         exit_code = 1
         if node is not None:
             node.get_logger().error(f'Mission aborted: {error}')

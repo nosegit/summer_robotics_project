@@ -18,7 +18,7 @@ parcel_acquisition_manager:
     kp_x: 0.6
     kp_y: 1.0 # 0.8
     kp_yaw: 1.5
-    position_tolerance: 0.01
+    position_tolerance: 0.015
     yaw_tolerance: 0.03
     settle_cycles: 5
     max_linear_velocity: 0.2
