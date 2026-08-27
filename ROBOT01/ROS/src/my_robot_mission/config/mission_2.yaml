@@ -1,6 +1,6 @@
 # Set this to true only after measuring and checking every pose.
 mission_configured: true
-parcel_id: 6
+parcel_id: 10
 
 # All poses are [x metres, y metres, yaw radians] in the map frame.
 start_pose: [-1.0, -6.0, 3.14]
@@ -13,7 +13,7 @@ poses:
   door_1_aim_door: [1.0, -6.0, 0.0] # door 2
 
 drone_parcel:
-  result_file: /tmp/targetLocation.json
+  result_file: /root/ros2_ws/src/targetLocation.json
   # convert_to_robot_frame.py already outputs robot-frame metres.
   coordinate_scale: 1.0
   map_origin_x: 0.0
@@ -45,7 +45,7 @@ commands:
   - wait(10)
   - navigate_to_pose(door_1_aim_door)
   - close_door(0)
-  - led_green
+  - led_red
 
 # UDP endpoints for the two door controllers. Replace these example addresses
 # before adding open_door(N) or close_door(N) to the command list.

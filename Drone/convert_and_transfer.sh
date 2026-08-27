@@ -11,7 +11,7 @@ START_X="-1"
 START_Y="-6"
 INPUT_FILE="$script_dir/targetLocation.json"
 OUTPUT_FILE="$script_dir/targetLocation_robot.json"
-REMOTE_FILE="/tmp/targetLocation.json"
+REMOTE_FILE="/home/pi/summer_robotics_project/ROBOT01/ROS/src/targetLocation.json"
 
 # The first command-line argument optionally overrides ROBOT.
 ROBOT="${1:-$ROBOT}"

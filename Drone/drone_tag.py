@@ -255,21 +255,26 @@ def searchSpace():
     for i in range(6):
         if markerFound:
             break
-        for j in range(5):
+
+        n_forward = 5
+        for j in range(n_forward if (i==0) else n_forward//2):
             if markerFound:
                 break
-            moveDrone(60, "f")
+            # moveDrone(60, "f")
+            moveDrone(60, "f" if (i % 2 == 0) else "b")
             time.sleep(1)
         if markerFound:
             break
-        turnDir = "l" if (i % 2 == 0) else "r"
-        rotateDrone(90 if turnDir == "l" else -90)
+        # turnDir = "l" if (i % 2 == 0) else "r"
+        # rotateDrone(90 if turnDir == "l" else -90)
+        turnDir = "r"
         if markerFound:
             break
         moveDrone(rowOffset, turnDir)
+        # moveDrone(rowOffset, "f")
         if markerFound:
             break
-        rotateDrone(90 if turnDir == "l" else -90)
+        # rotateDrone(90 if turnDir == "l" else -90)
     return lastTargetLoc
 
 def errorThreadHandler():
@@ -310,6 +315,7 @@ def determineTagCoords():
         print("NO TARGET, falling back to last pose")
         tagCoords = poseRecord[-1][:2]
     with flightLock:
+        moveDrone(60, "f")
         flight.land().wait_for_completed(timeout = 15)
     result = [tagCoords[0], tagCoords[1], (15 + (errorAccumulation * 0.5))]
     publishResult(result[0], result[1], result[2])
