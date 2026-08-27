@@ -78,19 +78,19 @@ all referenced poses are validated before robot motion starts.
 
 ## Drone-selected parcel row
 
-Set a reusable parcel ID and select a fixed staging pose from filtered drone
-detections:
+The mission can select a fixed staging pose either from a transferred drone JSON
+file or from live ROS detections. For the file workflow, configure:
 
 ```yaml
-parcel_id: 6
+parcel_id: 10
 poses:
   parcel_left: [-3.0, -3.50, 1.57]
   parcel_right: [-3.0, -6.85, 1.57]
 drone_parcel:
-  topic: /drone/parcel_detections
-  observation_timeout: 3.0
-  minimum_confidence: 0.7
-  sample_count: 5
+  result_file: /tmp/targetLocation.json
+  coordinate_scale: 1.0        # converted JSON is in robot-frame metres
+  map_origin_x: 0.0
+  map_origin_y: 0.0
   zone_boundary_y: -4.0
   boundary_margin: 0.3
   upper_staging_pose: parcel_left
@@ -101,10 +101,42 @@ commands:
   - servo_parcel(parcel_id)
 ```
 
-The drone topic uses `vision_msgs/msg/Detection3DArray` in the `map` frame.
-Each result supplies the marker ID in `hypothesis.class_id`, confidence in
-`hypothesis.score`, and map Y coordinate in `pose.pose.position.y`. A literal
-integer can replace `parcel_id` in any command for a one-off override.
+`Drone/convert_to_robot_frame.py` converts the drone coordinates to robot-frame
+metres before transfer, so the mission uses a scale of `1.0` and zero map
+offsets. It checks the marker ID when the JSON includes one and aborts before
+navigation if the file is missing, malformed, for another marker, or inside the
+configured boundary margin.
+
+### Transfer after manually changing Wi-Fi
+
+`Drone/drone_tag.py` writes `Drone/targetLocation.json` next to the script. Run
+`Drone/convert_to_robot_frame.py` to create `Drone/targetLocation_robot.json`.
+After the drone lands, manually change the host computer from the drone Wi-Fi
+to the network containing the Raspberry Pi. Then run the cross-platform Python
+helper (Windows and Linux both need OpenSSH `scp` and `ssh` on `PATH`):
+
+```bash
+python Drone/transfer_and_start_mission.py \
+  --robot pi@192.168.1.20 \
+  --remote-file /tmp/targetLocation.json
+```
+
+This validates the JSON before copying it. Start the already-built mission on
+the Pi after the copy, or supply the exact command used by your Pi installation:
+
+```bash
+python Drone/transfer_and_start_mission.py \
+  --robot pi@192.168.1.20 \
+  --start-command "ros2 run my_robot_mission parcel_mission"
+```
+
+The SSH session must already source the ROS workspace for that short command to
+work. If it does not, make `--start-command` source the workspace first, for
+example `source /root/ros2_ws/install/setup.bash && ros2 run ...`. The hardware
+bringup/Nav2 process must already be running on the robot.
+
+A literal integer can replace `parcel_id` in any command for a one-off
+override.
 
 Build the mission package from the ROS workspace/container:
 

@@ -61,8 +61,13 @@ python Drone/transfer_and_start_mission.py \
 
 To convert and transfer in one step, use the automation script for your
 platform. The configuration block at the top of each script sets the robot
-address, start coordinates, local files, and remote destination. Both scripts
-initially use `pi@192.168.1.20`:
+address and password, start coordinates, local files, and remote destination.
+Replace the `ROBOT_PASSWORD` placeholder before running. Both scripts initially
+use `pi@144.32.70.209`.
+
+The Bash script requires `sshpass`, and the Windows batch script requires
+PuTTY's `pscp.exe` on `PATH`. The configured password is stored as plaintext,
+so restrict access to these scripts and do not commit a real password to Git.
 
 ```bash
 ./Drone/convert_and_transfer.sh

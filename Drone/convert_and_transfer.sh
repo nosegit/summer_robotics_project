@@ -5,7 +5,8 @@ set -euo pipefail
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 # Configuration
-ROBOT="pi@192.168.1.20"
+ROBOT="pi@144.32.70.209"
+ROBOT_PASSWORD="raspberry"
 START_X="-1"
 START_Y="-6"
 INPUT_FILE="$script_dir/targetLocation.json"
@@ -21,7 +22,11 @@ python "$script_dir/convert_to_robot_frame.py" \
   --start-x "$START_X" \
   --start-y "$START_Y"
 
-python "$script_dir/transfer_and_start_mission.py" \
-  --robot "$ROBOT" \
-  --result "$OUTPUT_FILE" \
-  --remote-file "$REMOTE_FILE"
+if ! command -v sshpass >/dev/null 2>&1; then
+  echo "sshpass is required for password-based SCP." >&2
+  exit 1
+fi
+
+SSHPASS="$ROBOT_PASSWORD" sshpass -e scp \
+  "$OUTPUT_FILE" \
+  "$ROBOT:$REMOTE_FILE"

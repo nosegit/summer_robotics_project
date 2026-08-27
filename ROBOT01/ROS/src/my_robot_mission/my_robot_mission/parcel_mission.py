@@ -40,8 +40,6 @@ class ParcelMission(Node):
             self.drone = DroneParcelSelector(
                 self,
                 self.config.drone_parcel,
-                self.config.map_frame,
-                self.config.server_timeout,
             )
 
     def _navigate_to_drone_parcel(self, marker_id):

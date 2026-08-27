@@ -2,7 +2,8 @@
 setlocal
 
 rem Configuration
-set "ROBOT=pi@192.168.1.20"
+set "ROBOT=pi@144.32.70.209"
+set "ROBOT_PASSWORD=raspberry"
 set "START_X=-1"
 set "START_Y=-6"
 set "INPUT_FILE=%~dp0targetLocation.json"
@@ -19,10 +20,15 @@ python "%~dp0convert_to_robot_frame.py" ^
   --start-y "%START_Y%"
 if errorlevel 1 exit /b %errorlevel%
 
-python "%~dp0transfer_and_start_mission.py" ^
-  --robot "%ROBOT%" ^
-  --result "%OUTPUT_FILE%" ^
-  --remote-file "%REMOTE_FILE%"
+where pscp.exe >nul 2>&1
+if errorlevel 1 (
+  echo pscp.exe from PuTTY is required for password-based SCP. 1>&2
+  exit /b 1
+)
+
+pscp.exe -batch -pw "%ROBOT_PASSWORD%" ^
+  "%OUTPUT_FILE%" ^
+  "%ROBOT%:%REMOTE_FILE%"
 if errorlevel 1 exit /b %errorlevel%
 
 endlocal

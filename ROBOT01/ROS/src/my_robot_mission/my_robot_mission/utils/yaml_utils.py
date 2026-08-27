@@ -26,10 +26,10 @@ class MissionCommand:
 
 @dataclass(frozen=True)
 class DroneParcelConfig:
-    topic: str
-    observation_timeout: float
-    minimum_confidence: float
-    sample_count: int
+    result_file: str
+    coordinate_scale: float
+    map_origin_x: float
+    map_origin_y: float
     zone_boundary_y: float
     boundary_margin: float
     upper_staging_pose: object
@@ -181,11 +181,15 @@ def _drone(raw, commands, poses):
             'drone_parcel configuration is required by '
             'navigate_to_drone_parcel'
         )
+    if not raw.get('result_file'):
+        raise ValueError(
+            'drone_parcel.result_file is required by navigate_to_drone_parcel'
+        )
     result = DroneParcelConfig(
-        topic=str(raw.get('topic', '/drone/parcel_detections')),
-        observation_timeout=float(raw.get('observation_timeout', 3.0)),
-        minimum_confidence=float(raw.get('minimum_confidence', 0.7)),
-        sample_count=int(raw.get('sample_count', 5)),
+        result_file=str(raw['result_file']),
+        coordinate_scale=float(raw.get('coordinate_scale', 0.01)),
+        map_origin_x=float(raw.get('map_origin_x', 0.0)),
+        map_origin_y=float(raw.get('map_origin_y', 0.0)),
         zone_boundary_y=float(raw.get('zone_boundary_y', -4.0)),
         boundary_margin=float(raw.get('boundary_margin', 0.3)),
         upper_staging_pose=normalize_pose_key(
@@ -195,12 +199,8 @@ def _drone(raw, commands, poses):
             raw.get('lower_staging_pose', 'parcel_right')
         ),
     )
-    if result.observation_timeout <= 0.0:
-        raise ValueError('drone_parcel.observation_timeout must be positive')
-    if not 0.0 <= result.minimum_confidence <= 1.0:
-        raise ValueError('drone_parcel.minimum_confidence must be between 0 and 1')
-    if result.sample_count < 1:
-        raise ValueError('drone_parcel.sample_count must be at least 1')
+    if result.coordinate_scale <= 0.0:
+        raise ValueError('drone_parcel.coordinate_scale must be positive')
     if result.boundary_margin < 0.0:
         raise ValueError('drone_parcel.boundary_margin cannot be negative')
     missing = [
