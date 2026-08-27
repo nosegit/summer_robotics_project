@@ -317,7 +317,7 @@ def determineTagCoords():
     with flightLock:
         moveDrone(60, "f")
         flight.land().wait_for_completed(timeout = 15)
-    result = [tagCoords[0], tagCoords[1], (15 + (errorAccumulation * 0.5))]
+    result = [tagCoords[0], tagCoords[1], (15 + (errorAccumulation * 0.875))]
     publishResult(result[0], result[1], result[2])
     return result
 
