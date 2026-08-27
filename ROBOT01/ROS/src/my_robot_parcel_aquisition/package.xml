@@ -15,6 +15,7 @@
   <exec_depend>nav_msgs</exec_depend>
   <exec_depend>my_robot_vision</exec_depend>
   <exec_depend>rclpy</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
   <exec_depend>rosidl_default_runtime</exec_depend>
   <exec_depend>tf2_ros</exec_depend>
   <member_of_group>rosidl_interface_packages</member_of_group>

@@ -31,6 +31,7 @@ class SearchAction:
         parcel_seen = False
         last_seen_time = None
         centered_cycles = 0
+        self.manager.set_vision_active(True)
         try:
             timeout = float(self.manager.get_parameter('search_timeout').value)
             speed = float(self.manager.get_parameter('search_speed').value)
@@ -90,4 +91,5 @@ class SearchAction:
             return result
         finally:
             self.manager.stop()
+            self.manager.set_vision_active(False)
             self.manager.release_motion()

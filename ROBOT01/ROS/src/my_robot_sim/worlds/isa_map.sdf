@@ -152,7 +152,7 @@
       </link>
 
       <link name="pickup_location_1">
-        <pose>-6 -2.25 0.0005 0 0 0</pose> 
+        <pose>-4.0 -2.25 0.0005 0 0 0</pose> 
         <visual name="visual">
           <geometry><box><size>0.2 1.5 0.001</size></box></geometry>
           <material><diffuse>0.0 1.0 0.0 1.0</diffuse></material>
@@ -160,7 +160,7 @@
       </link>
 
       <link name="pickup_location_2">
-        <pose>-6 -5.75 0.0005 0 0 0</pose> 
+        <pose>-4.0 -5.75 0.0005 0 0 0</pose> 
         <visual name="visual">
           <geometry><box><size>0.2 1.5 0.001</size></box></geometry>
           <material><diffuse>0.0 1.0 0.0 1.0</diffuse></material>
@@ -178,22 +178,22 @@
     </model>
 
     <!-- Eight 10 cm parcels fit on each 1.5 m strip with 10 cm clear gaps. -->
-    <include><uri>model://aruco_box_00</uri><name>pickup_aruco_box_00</name><pose>-6 -2.95 0.05 0 0 0</pose></include>
-    <include><uri>model://aruco_box_01</uri><name>pickup_aruco_box_01</name><pose>-6 -2.75 0.05 0 0 0</pose></include>
-    <include><uri>model://aruco_box_02</uri><name>pickup_aruco_box_02</name><pose>-6 -2.55 0.05 0 0 0</pose></include>
-    <include><uri>model://aruco_box_03</uri><name>pickup_aruco_box_03</name><pose>-6 -2.35 0.05 0 0 0</pose></include>
-    <include><uri>model://aruco_box_04</uri><name>pickup_aruco_box_04</name><pose>-6 -2.15 0.05 0 0 0</pose></include>
-    <include><uri>model://aruco_box_05</uri><name>pickup_aruco_box_05</name><pose>-6 -1.95 0.05 0 0 0</pose></include>
-    <include><uri>model://aruco_box_06</uri><name>pickup_aruco_box_06</name><pose>-6 -1.75 0.05 0 0 0</pose></include>
-    <include><uri>model://aruco_box_07</uri><name>pickup_aruco_box_07</name><pose>-6 -1.55 0.05 0 0 0</pose></include>
+    <include><uri>model://aruco_box_00</uri><name>pickup_aruco_box_00</name><pose>-4.0 -2.95 0.05 0 0 0</pose></include>
+    <include><uri>model://aruco_box_01</uri><name>pickup_aruco_box_01</name><pose>-4.0 -2.75 0.05 0 0 0</pose></include>
+    <include><uri>model://aruco_box_02</uri><name>pickup_aruco_box_02</name><pose>-4.0 -2.55 0.05 0 0 0</pose></include>
+    <include><uri>model://aruco_box_03</uri><name>pickup_aruco_box_03</name><pose>-4.0 -2.35 0.05 0 0 0</pose></include>
+    <include><uri>model://aruco_box_04</uri><name>pickup_aruco_box_04</name><pose>-4.0 -2.15 0.05 0 0 0</pose></include>
+    <include><uri>model://aruco_box_05</uri><name>pickup_aruco_box_05</name><pose>-4.0 -1.95 0.05 0 0 0</pose></include>
+    <include><uri>model://aruco_box_06</uri><name>pickup_aruco_box_06</name><pose>-4.0 -1.75 0.05 0 0 0</pose></include>
+    <include><uri>model://aruco_box_07</uri><name>pickup_aruco_box_07</name><pose>-4.0 -1.55 0.05 0 0 0</pose></include>
 
-    <include><uri>model://aruco_box_08</uri><name>pickup_aruco_box_08</name><pose>-6 -6.45 0.05 0 0 0</pose></include>
-    <include><uri>model://aruco_box_09</uri><name>pickup_aruco_box_09</name><pose>-6 -6.25 0.05 0 0 0</pose></include>
-    <include><uri>model://aruco_box_10</uri><name>pickup_aruco_box_10</name><pose>-6 -6.05 0.05 0 0 0</pose></include>
-    <include><uri>model://aruco_box_11</uri><name>pickup_aruco_box_11</name><pose>-6 -5.85 0.05 0 0 0</pose></include>
-    <include><uri>model://aruco_box_12</uri><name>pickup_aruco_box_12</name><pose>-6 -5.65 0.05 0 0 0</pose></include>
-    <include><uri>model://aruco_box_13</uri><name>pickup_aruco_box_13</name><pose>-6 -5.45 0.05 0 0 0</pose></include>
-    <include><uri>model://aruco_box_14</uri><name>pickup_aruco_box_14</name><pose>-6 -5.25 0.05 0 0 0</pose></include>
-    <include><uri>model://aruco_box_15</uri><name>pickup_aruco_box_15</name><pose>-6 -5.05 0.05 0 0 0</pose></include>
+    <include><uri>model://aruco_box_08</uri><name>pickup_aruco_box_08</name><pose>-4.0 -6.45 0.05 0 0 0</pose></include>
+    <include><uri>model://aruco_box_09</uri><name>pickup_aruco_box_09</name><pose>-4.0 -6.25 0.05 0 0 0</pose></include>
+    <include><uri>model://aruco_box_10</uri><name>pickup_aruco_box_10</name><pose>-4.0 -6.05 0.05 0 0 0</pose></include>
+    <include><uri>model://aruco_box_11</uri><name>pickup_aruco_box_11</name><pose>-4.0 -5.85 0.05 0 0 0</pose></include>
+    <include><uri>model://aruco_box_12</uri><name>pickup_aruco_box_12</name><pose>-4.0 -5.65 0.05 0 0 0</pose></include>
+    <include><uri>model://aruco_box_13</uri><name>pickup_aruco_box_13</name><pose>-4.0 -5.45 0.05 0 0 0</pose></include>
+    <include><uri>model://aruco_box_14</uri><name>pickup_aruco_box_14</name><pose>-4.0 -5.25 0.05 0 0 0</pose></include>
+    <include><uri>model://aruco_box_15</uri><name>pickup_aruco_box_15</name><pose>-4.0 -5.05 0.05 0 0 0</pose></include>
   </world>
 </sdf>

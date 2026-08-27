@@ -8,8 +8,11 @@ import rclpy
 from cv_bridge import CvBridge
 from geometry_msgs.msg import TransformStamped
 from rclpy.node import Node
-from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
+from rclpy.qos import (
+    DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy,
+)
 from sensor_msgs.msg import CameraInfo, Image
+from std_msgs.msg import Bool
 from tf2_ros import TransformBroadcaster
 from vision_msgs.msg import Detection3D, Detection3DArray, ObjectHypothesisWithPose
 
@@ -37,6 +40,7 @@ class ArucoPoseEstimator(Node):
             'position_filter_alpha': 0.5,
             'position_outlier_threshold': 0.0,
             'position_filter_reset_timeout': 0.5,
+            'activation_topic': '/parcel_acquisition/vision_active',
         }
         for name, value in defaults.items():
             self.declare_parameter(name, value)
@@ -77,6 +81,7 @@ class ArucoPoseEstimator(Node):
         self.camera_matrix = None
         self.distortion = None
         self.camera_info_warning_emitted = False
+        self.active = False
         self._create_detector(dictionary_name)
 
         sensor_qos = QoSProfile(
@@ -89,6 +94,15 @@ class ArucoPoseEstimator(Node):
         )
         self.create_subscription(
             Image, image_topic, self._image_callback, sensor_qos
+        )
+        activation_qos = QoSProfile(
+            depth=1,
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+        )
+        self.create_subscription(
+            Bool, self.get_parameter('activation_topic').value,
+            self._activation_callback, activation_qos,
         )
         self.detection_pub = self.create_publisher(
             Detection3DArray, 'aruco/detections', 10
@@ -106,7 +120,13 @@ class ArucoPoseEstimator(Node):
                 Image, 'aruco/image_cube', sensor_qos
             )
         self.get_logger().info(
-            f'ArUco detector listening on {image_topic} using {dictionary_name}'
+            f'ArUco detector idle on {image_topic} using {dictionary_name}'
+        )
+
+    def _activation_callback(self, message):
+        self.active = bool(message.data)
+        self.get_logger().info(
+            'ArUco detector active' if self.active else 'ArUco detector idle'
         )
 
     def _create_detector(self, dictionary_name):
@@ -134,6 +154,8 @@ class ArucoPoseEstimator(Node):
             self.get_logger().info('Received camera intrinsics.')
 
     def _image_callback(self, msg):
+        if not self.active:
+            return
         if self.camera_matrix is None or self.distortion is None:
             if not self.camera_info_warning_emitted:
                 self.get_logger().warning('Waiting for CameraInfo...')

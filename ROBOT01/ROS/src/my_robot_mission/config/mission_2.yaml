@@ -5,10 +5,11 @@ mission_configured: true
 start_pose: [-1.0, -6.0, 3.14]
 # start_pose: [-0.0, -0.0, 3.14]
 poses:
-  0: [-1.5, -4.0, 3.14] # door 0.5m far
-  1: [-3.0, -6.85, 1.57] # parcel start point
-  2: [-1.5, -4.0, 0.0] # door 0.5m far
-  3: [1.0, -6.0, 0.0] # door 2
+  door_0_aim_away : [-1.5, -4.0, 3.14] # door 0.5m far
+  parcel_right: [-3.0, -6.85, 1.57] # parcel right start point
+  parcel_left: [-3.0, -3.50, 1.57] # parcel left start point
+  door_0_aim_door: [-1.5, -4.0, 0.0] # door 0.5m far
+  door_1_aim_door: [1.0, -6.0, 0.0] # door 2
 
 
 
@@ -20,17 +21,17 @@ commands:
   - idle
   - led_blink
   - set_initial_pose
-  - navigate_to_pose(0)
-  - navigate_to_pose(1)
+  - navigate_to_pose(door_0_aim_away)
+  - navigate_to_pose(parcel_left)
   - search_parcel(6)
   - servo_parcel(6)
   # - open_gripper
   - rotate_blind
   # - pickup
-  - navigate_to_pose(2)
+  - navigate_to_pose(door_0_aim_door)
   - open_door(0)
   - wait(10)
-  - navigate_to_pose(3)
+  - navigate_to_pose(door_1_aim_door)
   - close_door(0)
   - led_green
 

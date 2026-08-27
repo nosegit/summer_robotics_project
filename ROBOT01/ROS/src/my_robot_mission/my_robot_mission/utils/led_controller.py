@@ -10,6 +10,16 @@ except ImportError:
     LED = None
 
 
+class SimulatedLED:
+    """Minimal gpiozero-compatible LED used by simulation bringup."""
+
+    def __init__(self, initial_value=False):
+        self.value = bool(initial_value)
+
+    def close(self):
+        pass
+
+
 class LedController(Node):
     """Alternate red/green mission LEDs and provide a solid-red state."""
 
@@ -19,26 +29,34 @@ class LedController(Node):
         self.declare_parameter('green_gpio_pin', 27)
         self.declare_parameter('active_high', True)
         self.declare_parameter('blink_period', 0.5)
+        self.declare_parameter('simulate', False)
 
         red_pin = int(self.get_parameter('red_gpio_pin').value)
         green_pin = int(self.get_parameter('green_gpio_pin').value)
         active_high = bool(self.get_parameter('active_high').value)
         blink_period = float(self.get_parameter('blink_period').value)
+        simulate = bool(self.get_parameter('simulate').value)
         if red_pin < 0 or green_pin < 0 or red_pin == green_pin:
             raise ValueError(
                 'red_gpio_pin and green_gpio_pin must be different valid BCM pins'
             )
         if blink_period <= 0.0:
             raise ValueError('blink_period must be greater than zero')
-        if LED is None:
+        if LED is None and not simulate:
             raise RuntimeError(
                 'gpiozero is unavailable; install python3-gpiozero'
             )
 
-        self._red = LED(red_pin, active_high=active_high, initial_value=True)
-        self._green = LED(
-            green_pin, active_high=active_high, initial_value=False
-        )
+        if simulate:
+            self._red = SimulatedLED(initial_value=True)
+            self._green = SimulatedLED(initial_value=False)
+        else:
+            self._red = LED(
+                red_pin, active_high=active_high, initial_value=True
+            )
+            self._green = LED(
+                green_pin, active_high=active_high, initial_value=False
+            )
         self._blinking = False
         self._red_phase = True
         self.create_timer(blink_period, self._blink)
@@ -48,9 +66,12 @@ class LedController(Node):
         self.create_service(Trigger, '~/solid_red', self._solid_red)
         self.create_service(Trigger, '~/solid_green', self._solid_green)
         self.create_service(Trigger, '~/off', self._off)
-        self.get_logger().info(
-            f'Mission LEDs ready: red=BCM {red_pin}, green=BCM {green_pin}'
-        )
+        if simulate:
+            self.get_logger().info('Mission LEDs ready in simulation mode')
+        else:
+            self.get_logger().info(
+                f'Mission LEDs ready: red=BCM {red_pin}, green=BCM {green_pin}'
+            )
 
     def _set_outputs(self, red_on, green_on):
         self._red.value = red_on

@@ -23,6 +23,7 @@ def generate_launch_description():
     navigation_share = get_package_share_directory('my_robot_navigation')
     simulation_share = get_package_share_directory('my_robot_sim')
     localization_share = get_package_share_directory('my_robot_localization')
+    gripper_share = get_package_share_directory('my_robot_gripper')
     nav2_share = get_package_share_directory('nav2_bringup')
 
     mode = LaunchConfiguration('mode')
@@ -117,6 +118,25 @@ def generate_launch_description():
         parameters=[{'use_sim_time': True}],
     )
 
+    # The gripper node completes its service sequences from its internal angle
+    # model, so it also provides useful command-level behaviour when Gazebo has
+    # no physical servo controllers connected to its command topics.
+    gripper = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(gripper_share, 'launch', 'gripper.launch.py')
+        )
+    )
+
+    mission_led_controller = Node(
+        package='my_robot_mission',
+        executable='led_controller',
+        output='screen',
+        parameters=[{
+            'use_sim_time': True,
+            'simulate': True,
+        }],
+    )
+
     return LaunchDescription([
         # Nav2's isolated component container can need longer than the launch
         # default of five seconds to unload all components during shutdown.
@@ -150,4 +170,6 @@ def generate_launch_description():
         vision,
         acquisition,
         cmd_vel_arbiter,
+        gripper,
+        mission_led_controller,
     ])

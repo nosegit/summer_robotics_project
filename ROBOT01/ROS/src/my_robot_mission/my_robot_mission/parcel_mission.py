@@ -25,7 +25,7 @@ class ParcelMission(Node):
         r'^(set_initial_pose|navigate_to_pose|acquire_parcel|search_parcel|'
         r'servo_parcel|rotate_blind|idle|open_gripper|pickup|open_door|'
         r'close_door|wait|led_blink|led_red|led_green|led_off)'
-        r'(?:\(\s*(-?\d+)\s*\))?$'
+        r'(?:\(\s*([A-Za-z_][A-Za-z0-9_-]*|-?\d+)\s*\))?$'
     )
 
     def __init__(self, config, show_feedback=False):
@@ -37,9 +37,13 @@ class ParcelMission(Node):
         )
         raw_poses = config.get('poses', {})
         if not isinstance(raw_poses, dict):
-            raise ValueError('poses must be a YAML mapping of ID to [x, y, yaw]')
+            raise ValueError(
+                'poses must be a YAML mapping of name or ID to [x, y, yaw]'
+            )
         self._poses = {
-            int(pose_id): self._validate_pose(values, f'poses[{pose_id}]')
+            self._normalize_pose_key(pose_id): self._validate_pose(
+                values, f'poses[{pose_id}]'
+            )
             for pose_id, values in raw_poses.items()
         }
         self._commands = self._parse_commands(config.get('commands'))
@@ -113,6 +117,18 @@ class ParcelMission(Node):
         return tuple(float(value) for value in values)
 
     @staticmethod
+    def _normalize_pose_key(value):
+        """Keep named poses as strings while preserving numeric-ID support."""
+        text = str(value).strip()
+        if re.fullmatch(r'-?\d+', text):
+            return int(text)
+        if not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_-]*', text):
+            raise ValueError(
+                f'Invalid pose name {text!r}; use letters, numbers, _ or -'
+            )
+        return text
+
+    @staticmethod
     def _validate_door(value, door_id):
         if not isinstance(value, dict) or not value.get('host'):
             raise ValueError(f'doors[{door_id}] must contain a host')
@@ -132,33 +148,47 @@ class ParcelMission(Node):
             match = self.COMMAND_PATTERN.fullmatch(text)
             if match is None:
                 raise ValueError(f'Invalid mission command: {text!r}')
-            name, argument = match.groups()
-            argument = None if argument is None else int(argument)
+            name, argument_text = match.groups()
             no_argument_commands = {
                 'set_initial_pose', 'rotate_blind', 'idle',
                 'open_gripper', 'pickup', 'led_blink', 'led_red',
                 'led_green', 'led_off',
             }
-            marker_or_pose_commands = {
+            required_argument_commands = {
                 'navigate_to_pose', 'acquire_parcel',
                 'search_parcel', 'servo_parcel', 'open_door', 'close_door',
             }
-            if name in no_argument_commands and argument is not None:
+            if name in no_argument_commands and argument_text is not None:
                 raise ValueError(f'{name} does not accept an argument')
-            if name in marker_or_pose_commands and argument is None:
-                raise ValueError(f'{name} requires an integer argument')
-            if name == 'wait' and argument is None:
+            if name in required_argument_commands and argument_text is None:
+                expected = 'pose name or ID' if name == 'navigate_to_pose' else 'integer argument'
+                raise ValueError(f'{name} requires a {expected}')
+            if name == 'wait' and argument_text is None:
                 raise ValueError('wait requires a duration in seconds')
+
+            argument = None
+            if argument_text is not None:
+                if name == 'navigate_to_pose':
+                    argument = self._normalize_pose_key(argument_text)
+                else:
+                    try:
+                        argument = int(argument_text)
+                    except ValueError as error:
+                        raise ValueError(
+                            f'{name} requires an integer argument, got '
+                            f'{argument_text!r}'
+                        ) from error
             if name == 'wait' and argument < 0:
                 raise ValueError('wait duration must be non-negative')
             parsed.append((text, name, argument))
 
-        missing_poses = sorted({
+        missing_poses = {
             argument for _, name, argument in parsed
             if name == 'navigate_to_pose' and argument not in self._poses
-        })
+        }
         if missing_poses:
-            raise ValueError(f'Commands reference undefined pose IDs: {missing_poses}')
+            names = sorted((repr(value) for value in missing_poses))
+            raise ValueError(f'Commands reference undefined poses: {names}')
         return parsed
 
     @staticmethod

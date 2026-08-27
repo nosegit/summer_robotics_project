@@ -39,7 +39,8 @@ For example:
 ```yaml
 poses:
   0: [1.0, 0.0, 0.0]
-  10: [0.0, 1.0, 1.5708]
+  parcel_staging: [0.0, 1.0, 1.5708]
+  delivery: [2.0, 1.0, 0.0]
 commands:
   - idle
   - set_initial_pose
@@ -50,7 +51,8 @@ commands:
   - open_gripper
   - rotate_blind
   - pickup
-  - navigate_to_pose(10)
+  - navigate_to_pose(parcel_staging)
+  - navigate_to_pose(delivery)
   - open_door(0)
   - led_green
   - wait(10)

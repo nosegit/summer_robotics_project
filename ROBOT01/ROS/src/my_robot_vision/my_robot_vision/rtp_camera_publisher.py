@@ -13,8 +13,11 @@ import numpy as np
 import rclpy
 from cv_bridge import CvBridge
 from rclpy.node import Node
-from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
+from rclpy.qos import (
+    DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy,
+)
 from sensor_msgs.msg import CameraInfo, Image
+from std_msgs.msg import Bool
 
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst  # noqa: E402
@@ -31,6 +34,9 @@ class RtpCameraPublisher(Node):
         self.declare_parameter('camera_info_url', '')
         self.declare_parameter('frame_id', 'camera_optical_frame')
         self.declare_parameter('rotate_180', False)
+        self.declare_parameter(
+            'activation_topic', '/parcel_acquisition/vision_active'
+        )
 
         self.port = self.get_parameter('port').value
         self.width = self.get_parameter('width').value
@@ -77,8 +83,33 @@ class RtpCameraPublisher(Node):
         self.pipeline = Gst.parse_launch(pipeline)
         self.appsink = self.pipeline.get_by_name('framesink')
         self.appsink.connect('new-sample', self._on_new_sample)
-        self.pipeline.set_state(Gst.State.PLAYING)
-        self.get_logger().info(f'Listening for H.264/RTP camera frames on UDP {self.port}')
+        activation_qos = QoSProfile(
+            depth=1,
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+        )
+        self.active = False
+        self.create_subscription(
+            Bool, self.get_parameter('activation_topic').value,
+            self._activation_callback, activation_qos,
+        )
+        # READY opens no UDP/decode processing. An acquisition goal moves the
+        # pipeline to PLAYING, and completion returns it here.
+        self.pipeline.set_state(Gst.State.READY)
+        self.get_logger().info(
+            f'Camera decoder idle on UDP {self.port}; waiting for acquisition'
+        )
+
+    def _activation_callback(self, message):
+        active = bool(message.data)
+        if active == self.active:
+            return
+        self.active = active
+        state = Gst.State.PLAYING if active else Gst.State.READY
+        self.pipeline.set_state(state)
+        self.get_logger().info(
+            'Camera decoder active' if active else 'Camera decoder idle'
+        )
 
     def _load_camera_info(self, camera_info_url):
         info = CameraInfo()
@@ -117,6 +148,8 @@ class RtpCameraPublisher(Node):
         return info
 
     def _on_new_sample(self, sink):
+        if not self.active:
+            return Gst.FlowReturn.OK
         sample = sink.emit('pull-sample')
         buffer = sample.get_buffer()
         caps = sample.get_caps().get_structure(0)

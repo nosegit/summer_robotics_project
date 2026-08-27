@@ -6,6 +6,8 @@ from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
+from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
+from std_msgs.msg import Bool
 from tf2_ros import Buffer, TransformListener
 from my_robot_vision.msg import CubeDetectionArray
 
@@ -31,6 +33,7 @@ class AcquisitionManager(Node):
             'rotate_tolerance': 0.02, 'rotate_timeout': 20.0,
             'rotate_rate': 20.0, 'rotate_settle_cycles': 3,
             'rotate_forward_distance': 0.0,
+            'vision_active_topic': '/parcel_acquisition/vision_active',
         }
         for name, value in defaults.items():
             self.declare_parameter(name, value)
@@ -39,6 +42,14 @@ class AcquisitionManager(Node):
         self.tf_listener = TransformListener(self.tf_buffer, self)
         self.velocity_publisher = self.create_publisher(
             Twist, self.get_parameter('cmd_vel_topic').value, 10
+        )
+        activation_qos = QoSProfile(
+            depth=1,
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+        )
+        self.vision_active_publisher = self.create_publisher(
+            Bool, self.get_parameter('vision_active_topic').value, activation_qos
         )
         self._detections = {}
         self._detections_lock = threading.Lock()
@@ -53,6 +64,12 @@ class AcquisitionManager(Node):
             Odometry, self.get_parameter('odometry_topic').value,
             self._odometry_callback, 10, callback_group=self.callback_group,
         )
+        self.set_vision_active(False)
+
+    def set_vision_active(self, active):
+        message = Bool()
+        message.data = bool(active)
+        self.vision_active_publisher.publish(message)
 
     def _odometry_callback(self, msg):
         position = msg.pose.pose.position

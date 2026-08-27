@@ -36,6 +36,7 @@ class ServoAction:
         started = time.monotonic()
         settled = 0
         parcel_seen = False
+        self.manager.set_vision_active(True)
         try:
             rate = float(self.manager.get_parameter('servo_rate').value)
             timeout = float(self.manager.get_parameter('servo_timeout').value)
@@ -119,4 +120,5 @@ class ServoAction:
             return result
         finally:
             self.manager.stop()
+            self.manager.set_vision_active(False)
             self.manager.release_motion()
