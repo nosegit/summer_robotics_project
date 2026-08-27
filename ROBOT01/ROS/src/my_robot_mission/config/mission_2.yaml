@@ -1,6 +1,6 @@
 # Set this to true only after measuring and checking every pose.
 mission_configured: true
-parcel_id: 10
+parcel_id: 3
 
 # All poses are [x metres, y metres, yaw radians] in the map frame.
 start_pose: [-1.0, -6.0, 3.14]

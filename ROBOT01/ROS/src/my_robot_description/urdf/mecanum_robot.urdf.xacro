@@ -347,7 +347,7 @@
         <ros2_control name="ArduinoRight" type="system">
             <hardware>
                 <plugin>arduino_hardware_interface/ArduinoHardwareInterface</plugin>
-                <param name="serial_port">/dev/ttyAMA2</param>
+                <param name="serial_port">/dev/ttyNANO_R</param>
                 <param name="baudrate">115200</param>
                 <param name="initial_servo_angle">80.0</param>
             </hardware>
