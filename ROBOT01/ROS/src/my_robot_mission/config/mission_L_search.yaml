@@ -38,6 +38,7 @@ commands:
   - set_initial_pose
   - navigate_to_pose(door_0_aim_away)
   - navigate_to_pose(parcel_left)
+  - search_parcel(parcel_id)
   - servo_parcel(parcel_id)
   # - open_gripper
   - rotate_blind

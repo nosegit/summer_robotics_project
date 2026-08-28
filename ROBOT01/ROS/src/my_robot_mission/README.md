@@ -176,6 +176,8 @@ a different configuration for one run:
 ```bash
 ros2 run my_robot_mission parcel_mission --mission-file /path/to/mission.yaml
 ros2 run my_robot_mission parcel_mission --mission-file /root/ros2_ws/src/my_robot_mission/config/mission.yaml
+ros2 run my_robot_mission parcel_mission --mission-file /root/ros2_ws/src/my_robot_mission/config/mission_full_search.yaml
+
 
 ```
 

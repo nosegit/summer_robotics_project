@@ -1,6 +1,6 @@
 # Set this to true only after measuring and checking every pose.
 mission_configured: true
-parcel_id: 3
+parcel_id: 9
 retry_count: 1 # additional attempts after the first
 
 
@@ -39,9 +39,9 @@ commands:
   - navigate_to_pose(door_0_aim_away)
   - search_parcel_two_areas(parcel_id)
   - servo_parcel(parcel_id)
-  # - open_gripper
+  - open_gripper
   - rotate_blind
-  # - pickup
+  - pickup
   - navigate_to_pose(door_0_aim_door)
   - open_door(0)
   - wait(10)
@@ -56,8 +56,8 @@ commands:
 # UDP endpoints for the two door controllers. Replace these example addresses
 # before adding open_door(N) or close_door(N) to the command list.
 doors:
-  0: {host: 144.32.70.229, port: 50000}
-  1: {host: 192.168.1.101, port: 50000}
+  0: {host: 144.32.165.89, port: 50000}
+  1: {host: 144.32.165.90, port: 50000}
 
 pickup_rotation: 1.5708
 initial_pose_publish_count: 5

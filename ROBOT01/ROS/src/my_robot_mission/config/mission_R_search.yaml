@@ -1,6 +1,6 @@
 # Set this to true only after measuring and checking every pose.
 mission_configured: true
-parcel_id: 3
+parcel_id: 9
 retry_count: 1 # additional attempts after the first
 
 
@@ -38,10 +38,11 @@ commands:
   - set_initial_pose
   - navigate_to_pose(door_0_aim_away)
   - navigate_to_pose(parcel_right)
+  - search_parcel(parcel_id)
   - servo_parcel(parcel_id)
-  # - open_gripper
+  - open_gripper
   - rotate_blind
-  # - pickup
+  - pickup
   - navigate_to_pose(door_0_aim_door)
   - open_door(0)
   - wait(10)
