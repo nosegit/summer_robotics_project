@@ -17,6 +17,11 @@ Commands are executed from top to bottom:
 - `set_initial_pose`
 - `navigate_to_pose(N)` navigates to pose ID `N` from `poses`.
 - `search_parcel(N)` searches for marker ID `N`.
+- `search_fallback(N, POSE)` searches once and, if it fails, navigates back to
+  `POSE` before making one final search attempt.
+- `search_parcel_two_areas(N)` starts at `parcel_right`, searches until the
+  robot reaches map `y = -4`, then navigates to `parcel_left` and searches
+  again if the marker was not found.
 - `servo_parcel(N)` docks with marker ID `N`.
 - `rotate_blind` performs the configured pickup rotation.
 - `idle`, `open_gripper`, and `pickup` run the matching gripper sequence.
@@ -33,6 +38,12 @@ Commands are executed from top to bottom:
 Gripper movement only occurs when its command is explicitly present in the
 mission YAML. Gripper operations wait for the smooth motion to finish before
 the mission continues.
+
+Set `retry_count` in the mission YAML to control additional attempts after the
+first (`0` disables retries and `1` gives two total attempts). Search commands
+are excluded from automatic in-place retry because repeating a search at the
+failed position is unsafe. `search_fallback(N, POSE)` uses the same retry count
+and returns to `POSE` before each additional search attempt.
 
 For example:
 
@@ -82,7 +93,7 @@ The mission can select a fixed staging pose either from a transferred drone JSON
 file or from live ROS detections. For the file workflow, configure:
 
 ```yaml
-parcel_id: 10
+parcel_id: 6
 poses:
   parcel_left: [-3.0, -3.50, 1.57]
   parcel_right: [-3.0, -6.85, 1.57]

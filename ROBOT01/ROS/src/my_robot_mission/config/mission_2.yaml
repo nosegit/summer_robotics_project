@@ -1,6 +1,7 @@
 # Set this to true only after measuring and checking every pose.
 mission_configured: true
 parcel_id: 3
+retry_count: 1 # additional attempts after the first
 
 # All poses are [x metres, y metres, yaw radians] in the map frame.
 start_pose: [-1.0, -6.0, 3.14]
@@ -35,8 +36,7 @@ commands:
   - set_initial_pose
   - navigate_to_pose(door_0_aim_away)
   - navigate_to_drone_parcel(parcel_id)
-  - search_parcel(parcel_id)
-  - servo_parcel(parcel_id)
+  # - servo_parcel(parcel_id)
   # - open_gripper
   - rotate_blind
   # - pickup

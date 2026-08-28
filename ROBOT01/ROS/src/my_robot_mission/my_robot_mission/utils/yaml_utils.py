@@ -10,10 +10,12 @@ import yaml
 
 COMMAND_PATTERN = re.compile(
     r'^(set_initial_pose|navigate_to_pose|navigate_to_drone_parcel|'
-    r'acquire_parcel|search_parcel|servo_parcel|rotate_blind|idle|'
+    r'acquire_parcel|search_parcel|search_fallback|'
+    r'search_parcel_two_areas|servo_parcel|'
+    r'rotate_blind|idle|'
     r'open_gripper|pickup|open_door|close_door|wait|led_blink|'
     r'led_red|led_green|led_off)'
-    r'(?:\(\s*([A-Za-z_][A-Za-z0-9_-]*|-?\d+)\s*\))?$'
+    r'(?:\(\s*([^()]*)\s*\))?$'
 )
 
 
@@ -47,6 +49,7 @@ class MissionConfig:
     initial_pose_publish_period: float
     localization_settle_time: float
     server_timeout: float
+    retry_count: int
     map_frame: str
     doors: dict
     drone_parcel: DroneParcelConfig | None
@@ -104,7 +107,8 @@ def _commands(raw_commands, variables, poses):
     }
     required_argument = {
         'navigate_to_pose', 'navigate_to_drone_parcel', 'acquire_parcel',
-        'search_parcel', 'servo_parcel', 'open_door', 'close_door',
+        'search_parcel', 'search_parcel_two_areas', 'servo_parcel',
+        'open_door', 'close_door',
     }
     parsed = []
     for raw_command in raw_commands:
@@ -113,6 +117,39 @@ def _commands(raw_commands, variables, poses):
         if match is None:
             raise ValueError(f'Invalid mission command: {text!r}')
         name, argument_text = match.groups()
+        argument_parts = (
+            [] if argument_text is None
+            else [part.strip() for part in argument_text.split(',')]
+        )
+        if any(not part for part in argument_parts):
+            raise ValueError(f'Invalid empty argument in command: {text!r}')
+        if name == 'search_fallback':
+            if len(argument_parts) != 2:
+                raise ValueError(
+                    'search_fallback requires parcel ID and restart pose'
+                )
+            marker_text, restart_text = argument_parts
+            try:
+                marker_id = int(marker_text)
+            except ValueError as error:
+                if marker_text not in variables:
+                    raise ValueError(
+                        'search_fallback parcel ID must be an integer or '
+                        f'configured variable, got {marker_text!r}'
+                    ) from error
+                marker_id = variables[marker_text]
+            restart_pose = normalize_pose_key(restart_text)
+            if restart_pose not in poses:
+                raise ValueError(
+                    'search_fallback references undefined restart pose: '
+                    f'{restart_pose!r}'
+                )
+            parsed.append(
+                MissionCommand(text, name, (marker_id, restart_pose))
+            )
+            continue
+        if len(argument_parts) > 1:
+            raise ValueError(f'{name} accepts at most one argument')
         if name in no_argument and argument_text is not None:
             raise ValueError(f'{name} does not accept an argument')
         if name in required_argument and argument_text is None:
@@ -124,7 +161,8 @@ def _commands(raw_commands, variables, poses):
         if name == 'wait' and argument_text is None:
             raise ValueError('wait requires a duration in seconds')
         argument = None
-        if argument_text is not None:
+        if argument_parts:
+            argument_text = argument_parts[0]
             if name == 'navigate_to_pose':
                 argument = normalize_pose_key(argument_text)
             else:
@@ -147,6 +185,16 @@ def _commands(raw_commands, variables, poses):
     if missing:
         names = sorted(repr(value) for value in missing)
         raise ValueError(f'Commands reference undefined poses: {names}')
+    if any(command.name == 'search_parcel_two_areas' for command in parsed):
+        missing_search_poses = [
+            name for name in ('parcel_right', 'parcel_left')
+            if name not in poses
+        ]
+        if missing_search_poses:
+            raise ValueError(
+                'search_parcel_two_areas requires poses: '
+                f'{missing_search_poses}'
+            )
     return tuple(parsed)
 
 
@@ -222,6 +270,9 @@ def parse_mission_config(config):
         for key, value in raw_poses.items()
     }
     commands = _commands(config.get('commands'), variables, poses)
+    retry_count = int(config.get('retry_count', 1))
+    if retry_count < 0:
+        raise ValueError('retry_count must be a non-negative integer')
     return MissionConfig(
         configured=bool(config.get('mission_configured', False)),
         start_pose=_pose(config.get('start_pose'), 'start_pose'),
@@ -232,6 +283,7 @@ def parse_mission_config(config):
         initial_pose_publish_period=float(config.get('initial_pose_publish_period', 0.5)),
         localization_settle_time=float(config.get('localization_settle_time', 2.0)),
         server_timeout=float(config.get('server_timeout', 60.0)),
+        retry_count=retry_count,
         map_frame=str(config.get('map_frame', 'map')),
         doors=_doors(config.get('doors', {}), commands),
         drone_parcel=_drone(config.get('drone_parcel'), commands, poses),

@@ -1,0 +1,68 @@
+# Set this to true only after measuring and checking every pose.
+mission_configured: true
+parcel_id: 3
+retry_count: 1 # additional attempts after the first
+
+
+# All poses are [x metres, y metres, yaw radians] in the map frame.
+start_pose: [-1.0, -6.0, 3.14]
+# start_pose: [-0.0, -0.0, 3.14]
+poses:
+  door_0_aim_away : [-1.5, -4.0, 3.14] # door 0
+  parcel_right: [-3.0, -6.85, 1.57] # parcel right start point
+  parcel_left: [-3.0, -3.50, 1.57] # parcel left start point
+  door_0_aim_door: [-1.5, -4.0, 0.0] # door 0
+  door_1_aim_door: [1.0, -8.5, 0.0] # door 1
+  drop_point: [4.0, -9.5, 0.0] # drop point
+
+drone_parcel:
+  result_file: /root/ros2_ws/src/targetLocation.json
+  # convert_to_robot_frame.py already outputs robot-frame metres.
+  coordinate_scale: 1.0
+  map_origin_x: 0.0
+  map_origin_y: 0.0
+  zone_boundary_y: -4.0
+  boundary_margin: 0.3
+  upper_staging_pose: parcel_left
+  lower_staging_pose: parcel_right
+
+
+
+# Commands are executed from top to bottom. Commands may be reordered,
+# omitted or repeated. Gripper movements occur only when listed explicitly.
+commands:
+  - close_door(0)
+  - close_door(1)
+  - idle
+  - led_blink
+  - set_initial_pose
+  - navigate_to_pose(door_0_aim_away)
+  - navigate_to_drone_parcel(parcel_id)
+  - search_parcel(parcel_id)
+  - servo_parcel(parcel_id)
+  # - open_gripper
+  - rotate_blind
+  # - pickup
+  - navigate_to_pose(door_0_aim_door)
+  - open_door(0)
+  - wait(10)
+  - navigate_to_pose(door_1_aim_door)
+  - close_door(0)
+  - open_door(1)
+  - wait(10)
+  - navigate_to_pose(drop_point)
+  - close_door(1)
+  - led_green
+
+# UDP endpoints for the two door controllers. Replace these example addresses
+# before adding open_door(N) or close_door(N) to the command list.
+doors:
+  0: {host: 144.32.70.229, port: 50000}
+  1: {host: 192.168.1.101, port: 50000}
+
+pickup_rotation: 1.5708
+initial_pose_publish_count: 5
+initial_pose_publish_period: 0.5
+localization_settle_time: 2.0
+server_timeout: 60.0
+map_frame: map

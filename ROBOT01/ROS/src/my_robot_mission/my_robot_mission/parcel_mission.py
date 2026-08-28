@@ -6,6 +6,7 @@ import sys
 
 import rclpy
 from ament_index_python.packages import get_package_share_directory
+from geometry_msgs.msg import PoseWithCovarianceStamped
 from rclpy.node import Node
 
 from .utils.action_utils import ActionRunner
@@ -35,12 +36,57 @@ class ParcelMission(Node):
         self.gripper = GripperClient(self, self.config.server_timeout)
         self.led = MissionLedClient(self, self.config.server_timeout)
         self.doors = DoorClient(self, self.config.doors)
+        self._map_y = None
+        self.create_subscription(
+            PoseWithCovarianceStamped,
+            '/amcl_pose',
+            self._map_pose_callback,
+            10,
+        )
         self.drone = None
         if self.config.drone_parcel is not None:
             self.drone = DroneParcelSelector(
                 self,
                 self.config.drone_parcel,
             )
+
+    def _map_pose_callback(self, message):
+        self._map_y = float(message.pose.pose.position.y)
+
+    def _search_parcel_two_areas(self, marker_id):
+        """Search right area up to y=-4, then restart from the left area."""
+        right_pose = 'parcel_right'
+        left_pose = 'parcel_left'
+        boundary_y = -4.0
+        missing = [
+            name for name in (right_pose, left_pose)
+            if name not in self.config.poses
+        ]
+        if missing:
+            raise RuntimeError(
+                f'two-area parcel search requires poses: {missing}'
+            )
+
+        self.navigation.navigate_to(
+            self.config.poses[right_pose], 'parcel right search start'
+        )
+        if self._map_y is None:
+            raise RuntimeError(
+                'two-area parcel search requires localization on /amcl_pose'
+            )
+        found = self.parcel.search_until_y(
+            marker_id, lambda: self._map_y, boundary_y
+        )
+        if found:
+            return
+
+        self.get_logger().info(
+            'Parcel not found in right area; restarting search from parcel_left'
+        )
+        self.navigation.navigate_to(
+            self.config.poses[left_pose], 'parcel left search start'
+        )
+        self.parcel.search(marker_id)
 
     def _navigate_to_drone_parcel(self, marker_id):
         pose_key, median_y = self.drone.select_staging_pose(marker_id)
@@ -52,6 +98,25 @@ class ParcelMission(Node):
             self.config.poses[pose_key],
             f'drone-selected parcel staging pose {pose_key}',
         )
+
+    def _search_fallback(self, marker_id, restart_pose):
+        """Retry a failed search only after returning to a safe pose."""
+        attempts = self.config.retry_count + 1
+        for attempt in range(1, attempts + 1):
+            try:
+                self.parcel.search(marker_id)
+                return
+            except RuntimeError as error:
+                if attempt == attempts:
+                    raise
+                self.get_logger().warning(
+                    f'Parcel search failed on attempt {attempt}/{attempts} '
+                    f'({error}); returning to {restart_pose!r} before retry'
+                )
+                self.navigation.navigate_to(
+                    self.config.poses[restart_pose],
+                    f'parcel search restart pose {restart_pose}',
+                )
 
     def _execute(self, command):
         name = command.name
@@ -68,6 +133,10 @@ class ParcelMission(Node):
             self.parcel.acquire(argument)
         elif name == 'search_parcel':
             self.parcel.search(argument)
+        elif name == 'search_fallback':
+            self._search_fallback(*argument)
+        elif name == 'search_parcel_two_areas':
+            self._search_parcel_two_areas(argument)
         elif name == 'servo_parcel':
             self.parcel.servo(argument)
         elif name == 'rotate_blind':
@@ -89,6 +158,27 @@ class ParcelMission(Node):
         elif name == 'led_off':
             self.led.set('off')
 
+    def _execute_with_retry(self, command):
+        search_commands = {
+            'search_parcel', 'search_fallback',
+            'search_parcel_two_areas', 'acquire_parcel',
+        }
+        attempts = (
+            1 if command.name in search_commands
+            else self.config.retry_count + 1
+        )
+        for attempt in range(1, attempts + 1):
+            try:
+                self._execute(command)
+                return
+            except Exception as error:
+                if attempt == attempts:
+                    raise
+                self.get_logger().warning(
+                    f'Command {command.text} failed on attempt {attempt}/'
+                    f'{attempts}: {error}; retrying'
+                )
+
     def run(self):
         if not self.config.configured:
             raise RuntimeError(
@@ -101,7 +191,10 @@ class ParcelMission(Node):
             )
         )
         self.led.set('blinking')
-        navigation_commands = {'navigate_to_pose', 'navigate_to_drone_parcel'}
+        navigation_commands = {
+            'navigate_to_pose', 'navigate_to_drone_parcel',
+            'search_fallback', 'search_parcel_two_areas',
+        }
         if any(
             command.name in navigation_commands
             for command in self.config.commands
@@ -113,7 +206,7 @@ class ParcelMission(Node):
             self.get_logger().info(
                 f'Running command {index}/{total}: {command.text}'
             )
-            self._execute(command)
+            self._execute_with_retry(command)
 
         self.led.set('solid red')
         self.get_logger().info('Mission complete')
