@@ -164,11 +164,11 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument('lidar_baudrate', default_value='115200'),
         DeclareLaunchArgument(
-            'red_led_gpio', default_value='17',
+            'red_led_gpio', default_value='27',
             description='BCM GPIO number for the red mission LED.',
         ),
         DeclareLaunchArgument(
-            'green_led_gpio', default_value='27',
+            'green_led_gpio', default_value='17',
             description='BCM GPIO number for the green mission LED.',
         ),
         DeclareLaunchArgument(
